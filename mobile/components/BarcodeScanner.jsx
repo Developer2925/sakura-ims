@@ -40,15 +40,9 @@ export function BarcodeScanner({ onScan, active = true, onReady }) {
     return () => loop.stop();
   }, [scanLineAnim]);
 
-  function isJAN(data) {
-    if (data.length === 13) return data.startsWith('45') || data.startsWith('49');
-    if (data.length === 8)  return data.startsWith('04');
-    return false;
-  }
-
   function handleBarcode({ data }) {
     if (scanned || !active) return;
-    if (!isJAN(data)) return;
+    if (data.length !== 13 && data.length !== 8) return;
     setScanned(true);
     Vibration.vibrate(120);
     setTimeout(() => onScan(data), 200);
