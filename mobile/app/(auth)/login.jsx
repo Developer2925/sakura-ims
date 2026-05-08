@@ -131,7 +131,7 @@ export default function LoginScreen() {
             disabled={googleLoading}
           >
             <Text style={styles.googleG}>G</Text>
-            <Text style={styles.googleBtnText}>{googleLoading ? 'Signing in...' : 'Continue with Google'}</Text>
+            <Text style={styles.googleBtnText}>{googleLoading ? t('googleSigningIn') : t('continueWithGoogle')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.forgotLink} onPress={() => router.push("/(auth)/forgot-password")} activeOpacity={0.7}>

@@ -104,7 +104,7 @@ export default function SettingsScreen() {
             <View style={[styles.rowIcon, { backgroundColor: getIconBoxColor(colors.isDark ? 'moon' : 'sun', colors.isDark) }]}>
               <AppIcon name={colors.isDark ? 'moon' : 'sun'} size={20} />
             </View>
-            <Text style={styles.rowLabel}>{colors.isDark ? 'Dark Mode' : 'Light Mode'}</Text>
+            <Text style={styles.rowLabel}>{colors.isDark ? t('settingsDarkMode') : t('settingsLightMode')}</Text>
             <TouchableOpacity onPress={toggleTheme} activeOpacity={0.85}>
               <View style={styles.toggleTrack}>
                 <Animated.View
@@ -134,7 +134,7 @@ export default function SettingsScreen() {
             <View style={[styles.rowIcon, { backgroundColor: getIconBoxColor('person', colors.isDark) }]}>
               <AppIcon name="person" size={20} />
             </View>
-            <Text style={styles.rowLabel}>Profile</Text>
+            <Text style={styles.rowLabel}>{t('settingsProfile')}</Text>
             <AppIcon name="forward" size={16} />
           </TouchableOpacity>
           <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={handleLogout} activeOpacity={0.8}>

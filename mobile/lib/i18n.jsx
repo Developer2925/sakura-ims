@@ -36,6 +36,11 @@ const T = {
     forgotPassword: "パスワードを忘れた方",
     noAccount: "アカウントをお持ちでない方",
     createAccount: "アカウント作成",
+    continueWithGoogle: "Googleでログイン",
+    googleSigningIn: "サインイン中…",
+    settingsProfile: "プロフィール",
+    settingsDarkMode: "ダークモード",
+    settingsLightMode: "ライトモード",
 
     // Auth — Register
     registerHeadline: "アカウント作成",
@@ -379,6 +384,11 @@ const T = {
     forgotPassword: "Forgot password?",
     noAccount: "Don't have an account?",
     createAccount: "Create Account",
+    continueWithGoogle: "Continue with Google",
+    googleSigningIn: "Signing in...",
+    settingsProfile: "Profile",
+    settingsDarkMode: "Dark Mode",
+    settingsLightMode: "Light Mode",
 
     // Auth — Register
     registerHeadline: "Create Account",
