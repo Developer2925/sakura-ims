@@ -3,8 +3,8 @@ const auth = require('../middleware/auth');
 const db = require('../db');
 
 router.post('/request', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   const { itemId, requestedQuantity, notes } = req.body;
 
   if (!itemId || !requestedQuantity) {
@@ -12,7 +12,7 @@ router.post('/request', auth, async (req, res) => {
   }
   try {
     const [result] = await db.execute(
-      `INSERT INTO restock_requests (clinic_id, item_id, requested_quantity, notes) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO restock_requests (user_id, item_id, requested_quantity, notes) VALUES (?, ?, ?, ?)`,
       [clinicId, itemId, parseInt(requestedQuantity), notes || null]
     );
     const [requests] = await db.execute(
@@ -28,21 +28,21 @@ router.post('/request', auth, async (req, res) => {
 });
 
 router.get('/status', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   try {
     const [requests] = await db.execute(
       `SELECT rr.*, i.name AS item_name, i.category, inv.quantity AS current_stock,
               COALESCE(
                 (SELECT ib.price FROM item_batches ib
-                 WHERE ib.item_id = i.id AND ib.clinic_id = rr.clinic_id
+                 WHERE ib.item_id = i.id AND ib.user_id = rr.user_id
                  ORDER BY ib.created_at DESC LIMIT 1),
                 i.price
               ) AS unit_price
        FROM restock_requests rr
        JOIN items i ON rr.item_id = i.id
-       LEFT JOIN inventory inv ON inv.item_id = i.id AND inv.clinic_id = rr.clinic_id
-       WHERE rr.clinic_id = ?
+       LEFT JOIN inventory inv ON inv.item_id = i.id AND inv.user_id = rr.user_id
+       WHERE rr.user_id = ?
        ORDER BY rr.requested_at DESC`,
       [clinicId]
     );
@@ -54,8 +54,8 @@ router.get('/status', auth, async (req, res) => {
 
 // POST /restock/confirm-delivery — clinic confirms they received the stock and creates new batch
 router.post('/confirm-delivery', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   const { requestId, price, expiryDate, conditionStatus = '新品', restockDate } = req.body;
 
   if (!requestId || price === undefined) {
@@ -69,7 +69,7 @@ router.post('/confirm-delivery', auth, async (req, res) => {
     const [reqs] = await conn.execute(
       `SELECT rr.*, i.name AS item_name
        FROM restock_requests rr JOIN items i ON rr.item_id = i.id
-       WHERE rr.id = ? AND rr.clinic_id = ? AND rr.status = 'out_for_delivery'`,
+       WHERE rr.id = ? AND rr.user_id = ? AND rr.status = 'out_for_delivery'`,
       [requestId, clinicId]
     );
     if (!reqs.length) {
@@ -88,7 +88,7 @@ router.post('/confirm-delivery', auth, async (req, res) => {
 
     // Create new batch with user-provided details
     await conn.execute(
-      `INSERT INTO item_batches (item_id, clinic_id, price, expiry_date, quantity, condition_status)
+      `INSERT INTO item_batches (item_id, user_id, price, expiry_date, quantity, condition_status)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [r.item_id, clinicId, unitPrice, expiryDate || null, qty, conditionStatus]
     );
@@ -96,20 +96,20 @@ router.post('/confirm-delivery', auth, async (req, res) => {
     // Update inventory totals
     await conn.execute(
       `UPDATE inventory SET quantity = quantity + ?, total_quantity_received = total_quantity_received + ?
-       WHERE clinic_id = ? AND item_id = ?`,
+       WHERE user_id = ? AND item_id = ?`,
       [qty, qty, clinicId, r.item_id]
     );
 
     // Record transaction for analytics
     await conn.execute(
-      `INSERT INTO transactions (clinic_id, item_id, item_name, type, quantity, unit_price, notes)
+      `INSERT INTO transactions (user_id, item_id, item_name, type, quantity, unit_price, notes)
        VALUES (?, ?, ?, 'add', ?, ?, 'Restock delivery confirmed')`,
       [clinicId, r.item_id, r.item_name, qty, unitPrice]
     );
 
     // Log the action
     await conn.execute(
-      `INSERT INTO restock_logs (request_id, clinic_id, item_id, quantity_added, action, performed_by)
+      `INSERT INTO restock_logs (request_id, user_id, item_id, quantity_added, action, performed_by)
        VALUES (?, ?, ?, ?, 'delivered', ?)`,
       [requestId, clinicId, r.item_id, qty, null]
     );

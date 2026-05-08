@@ -24,7 +24,8 @@ function requireAdmin(req, res, next) {
 router.get("/clinics", auth, requireAdmin, async (req, res) => {
   try {
     const [clinics] = await db.execute(
-      `SELECT c.id, c.name, c.username, c.email, c.plain_password,
+      `SELECT c.id, c.organization_name AS name, c.username, c.email, c.plain_password,
+              c.position, c.first_name, c.last_name,
               COUNT(DISTINCT i.id) AS item_count,
               COALESCE(SUM(
                 CASE
@@ -33,16 +34,16 @@ router.get("/clinics", auth, requireAdmin, async (req, res) => {
                 END
               ), 0) AS total_value,
               COALESCE(SUM(inv.quantity), 0) AS total_quantity
-       FROM clinics c
-       LEFT JOIN items i ON i.clinic_id = c.id
-       LEFT JOIN inventory inv ON inv.item_id = i.id AND inv.clinic_id = c.id
+       FROM users c
+       LEFT JOIN items i ON i.user_id = c.id
+       LEFT JOIN inventory inv ON inv.item_id = i.id AND inv.user_id = c.id
        LEFT JOIN (
-         SELECT item_id, clinic_id, SUM(price * quantity) AS batch_value
+         SELECT item_id, user_id, SUM(price * quantity) AS batch_value
          FROM item_batches
-         GROUP BY item_id, clinic_id
-       ) bt ON bt.item_id = i.id AND bt.clinic_id = c.id
+         GROUP BY item_id, user_id
+       ) bt ON bt.item_id = i.id AND bt.user_id = c.id
        GROUP BY c.id
-       ORDER BY c.name ASC`,
+       ORDER BY c.organization_name ASC`,
     );
     res.json({ clinics });
   } catch (err) {
@@ -62,7 +63,7 @@ router.put("/clinics/:id", auth, requireAdmin, async (req, res) => {
     const fields = [];
     const values = [];
     if (name) {
-      fields.push("name = ?");
+      fields.push("organization_name = ?");
       values.push(name);
     }
     if (username) {
@@ -82,11 +83,11 @@ router.put("/clinics/:id", auth, requireAdmin, async (req, res) => {
     }
     values.push(id);
     await db.execute(
-      `UPDATE clinics SET ${fields.join(", ")} WHERE id = ?`,
+      `UPDATE users SET ${fields.join(", ")} WHERE id = ?`,
       values,
     );
     const [[clinic]] = await db.execute(
-      "SELECT id, name, username, email, plain_password FROM clinics WHERE id = ?",
+      "SELECT id, organization_name AS name, username, email, plain_password, position, first_name, last_name FROM users WHERE id = ?",
       [id],
     );
     res.json({ clinic });
@@ -116,7 +117,7 @@ router.post(
 
     try {
       const [[clinic]] = await db.execute(
-        "SELECT id, name, username, email FROM clinics WHERE id = ?",
+        "SELECT id, organization_name AS name, username, email, position, first_name, last_name FROM users WHERE id = ?",
         [id],
       );
       if (!clinic) return res.status(404).json({ error: "Clinic not found" });
@@ -125,7 +126,7 @@ router.post(
           .status(400)
           .json({ error: "No email address set for this clinic" });
 
-      const clinicName = clinic.name.split("|")[0]?.trim() || clinic.name;
+      const clinicName = clinic.organization_name || "";
       const transporter = makeTransporter();
       await transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -165,7 +166,7 @@ router.get("/clinics/:id/inventory", auth, requireAdmin, async (req, res) => {
   const clinicId = req.params.id;
   try {
     const [clinics] = await db.execute(
-      "SELECT id, name, username FROM clinics WHERE id = ?",
+      "SELECT id, organization_name AS name, username, position, first_name, last_name FROM users WHERE id = ?",
       [clinicId],
     );
     if (!clinics.length)
@@ -175,8 +176,8 @@ router.get("/clinics/:id/inventory", auth, requireAdmin, async (req, res) => {
               (i.price * inv.quantity) AS total_price,
               (i.price * inv.total_quantity_received) AS total_received_cost
        FROM items i
-       JOIN inventory inv ON i.id = inv.item_id AND inv.clinic_id = ?
-       WHERE i.clinic_id = ?
+       JOIN inventory inv ON i.id = inv.item_id AND inv.user_id = ?
+       WHERE i.user_id = ?
        ORDER BY i.name ASC`,
       [clinicId, clinicId],
     );
@@ -184,7 +185,7 @@ router.get("/clinics/:id/inventory", auth, requireAdmin, async (req, res) => {
     let batches = [];
     try {
       const [rows] = await db.execute(
-        `SELECT * FROM item_batches WHERE clinic_id = ? ORDER BY expiry_date ASC, created_at ASC`,
+        `SELECT * FROM item_batches WHERE user_id = ? ORDER BY expiry_date ASC, created_at ASC`,
         [clinicId],
       );
       batches = rows;
@@ -222,7 +223,7 @@ router.put(
       return res.status(400).json({ error: "quantity required" });
     try {
       await db.execute(
-        "UPDATE inventory SET quantity = ? WHERE clinic_id = ? AND item_id = ?",
+        "UPDATE inventory SET quantity = ? WHERE user_id = ? AND item_id = ?",
         [Math.max(0, parseInt(quantity)), clinicId, itemId],
       );
       res.json({ success: true });
@@ -240,7 +241,7 @@ router.delete("/clinics/:id/data", auth, requireAdmin, async (req, res) => {
     await conn.beginTransaction();
 
     const [[clinic]] = await conn.execute(
-      "SELECT id FROM clinics WHERE id = ?",
+      "SELECT id FROM users WHERE id = ?",
       [id],
     );
     if (!clinic) {
@@ -249,13 +250,13 @@ router.delete("/clinics/:id/data", auth, requireAdmin, async (req, res) => {
     }
 
     // Order matters: delete dependents before parents (no CASCADE without clinic delete)
-    await conn.execute("DELETE FROM restock_logs WHERE clinic_id = ?", [id]);
-    await conn.execute("DELETE FROM restock_requests WHERE clinic_id = ?", [
+    await conn.execute("DELETE FROM restock_logs WHERE user_id = ?", [id]);
+    await conn.execute("DELETE FROM restock_requests WHERE user_id = ?", [
       id,
     ]);
-    await conn.execute("DELETE FROM transactions WHERE clinic_id = ?", [id]);
+    await conn.execute("DELETE FROM transactions WHERE user_id = ?", [id]);
     // Deleting items cascades inventory + item_batches (both have ON DELETE CASCADE on item_id)
-    await conn.execute("DELETE FROM items WHERE clinic_id = ?", [id]);
+    await conn.execute("DELETE FROM items WHERE user_id = ?", [id]);
 
     await conn.commit();
     res.json({ success: true });
@@ -272,10 +273,10 @@ router.delete("/clinics/:id/data", auth, requireAdmin, async (req, res) => {
 router.get("/restock/requests", auth, requireAdmin, async (req, res) => {
   const { status, clinicId } = req.query;
   let query = `SELECT rr.*, i.name AS item_name, i.category, i.price,
-               c.name AS clinic_name
+               c.organization_name AS clinic_name
                FROM restock_requests rr
                JOIN items i ON rr.item_id = i.id
-               JOIN clinics c ON rr.clinic_id = c.id
+               JOIN users c ON rr.user_id = c.id
                WHERE 1=1`;
   const params = [];
   if (status) {
@@ -283,7 +284,7 @@ router.get("/restock/requests", auth, requireAdmin, async (req, res) => {
     params.push(status);
   }
   if (clinicId) {
-    query += " AND rr.clinic_id = ?";
+    query += " AND rr.user_id = ?";
     params.push(clinicId);
   }
   query += " ORDER BY rr.requested_at DESC";
@@ -305,14 +306,14 @@ router.post("/restock/approve", auth, requireAdmin, async (req, res) => {
       [adminNote || null, requestId],
     );
     await db.execute(
-      `INSERT INTO restock_logs (request_id, clinic_id, item_id, quantity_added, action, performed_by)
-       SELECT id, clinic_id, item_id, requested_quantity, 'approved', ?
+      `INSERT INTO restock_logs (request_id, user_id, item_id, quantity_added, action, performed_by)
+       SELECT id, user_id, item_id, requested_quantity, 'approved', ?
        FROM restock_requests WHERE id = ?`,
       [req.user.id, requestId],
     );
     await db.execute(
-      `INSERT INTO notifications (clinic_id, type, message, restock_request_id)
-       SELECT rr.clinic_id, 'approved',
+      `INSERT INTO notifications (user_id, type, message, restock_request_id)
+       SELECT rr.user_id, 'approved',
          CONCAT('Your restock request for "', i.name, '" (x', rr.requested_quantity, ') has been approved.'),
          rr.id
        FROM restock_requests rr
@@ -340,14 +341,14 @@ router.post("/restock/reject", auth, requireAdmin, async (req, res) => {
       [adminNote || null, requestId],
     );
     await db.execute(
-      `INSERT INTO restock_logs (request_id, clinic_id, item_id, quantity_added, action, performed_by)
-       SELECT id, clinic_id, item_id, 0, 'rejected', ?
+      `INSERT INTO restock_logs (request_id, user_id, item_id, quantity_added, action, performed_by)
+       SELECT id, user_id, item_id, 0, 'rejected', ?
        FROM restock_requests WHERE id = ?`,
       [req.user.id, requestId],
     );
     await db.execute(
-      `INSERT INTO notifications (clinic_id, type, message, restock_request_id)
-       SELECT rr.clinic_id, 'rejected',
+      `INSERT INTO notifications (user_id, type, message, restock_request_id)
+       SELECT rr.user_id, 'rejected',
          CONCAT('Your restock request for "', i.name, '" has been rejected.',
            CASE WHEN ? IS NOT NULL THEN CONCAT(' Note: ', ?) ELSE '' END),
          rr.id
@@ -389,9 +390,9 @@ router.post("/restock/deliver", auth, requireAdmin, async (req, res) => {
       [requestId],
     );
     await conn.execute(
-      `INSERT INTO restock_logs (request_id, clinic_id, item_id, quantity_added, action, performed_by)
+      `INSERT INTO restock_logs (request_id, user_id, item_id, quantity_added, action, performed_by)
        VALUES (?, ?, ?, ?, 'out_for_delivery', ?)`,
-      [requestId, r.clinic_id, r.item_id, r.requested_quantity, req.user.id],
+      [requestId, r.user_id, r.item_id, r.requested_quantity, req.user.id],
     );
     const [itemRows] = await conn.execute(
       "SELECT name FROM items WHERE id = ?",
@@ -399,10 +400,10 @@ router.post("/restock/deliver", auth, requireAdmin, async (req, res) => {
     );
     const itemName = itemRows[0]?.name ?? "Unknown item";
     await conn.execute(
-      `INSERT INTO notifications (clinic_id, type, message, restock_request_id)
+      `INSERT INTO notifications (user_id, type, message, restock_request_id)
        VALUES (?, 'shipped', ?, ?)`,
       [
-        r.clinic_id,
+        r.user_id,
         `Your restock for "${itemName}" (x${r.requested_quantity}) has been shipped and is on the way.`,
         requestId,
       ],
@@ -429,9 +430,9 @@ router.get("/analytics/monthly", auth, requireAdmin, async (req, res) => {
   if (!isOverall && !month)
     return res.status(400).json({ error: "month or overall=true required" });
 
-  const clinicTxFilter = clinicId ? "AND t.clinic_id = ?" : "";
-  const clinicRRFilter = clinicId ? "AND rr.clinic_id = ?" : "";
-  const clinicInvFilter = clinicId ? "AND inv.clinic_id = ?" : "";
+  const clinicTxFilter = clinicId ? "AND t.user_id = ?" : "";
+  const clinicRRFilter = clinicId ? "AND rr.user_id = ?" : "";
+  const clinicInvFilter = clinicId ? "AND inv.user_id = ?" : "";
 
   let dateFrom, dateTo;
   if (!isOverall) {

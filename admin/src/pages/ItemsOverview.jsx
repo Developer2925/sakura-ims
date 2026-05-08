@@ -89,11 +89,15 @@ export default function ItemsOverview() {
   const totalStock = clinics.reduce((s, c) => s + Number(c.total_quantity), 0);
   const totalValue = clinics.reduce((s, c) => s + Number(c.total_value), 0);
 
-  const filtered = clinics.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.username.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = clinics.filter((c) => {
+    const q = search.toLowerCase();
+    return (
+      (c.name || "").toLowerCase().includes(q) ||
+      (c.username || "").toLowerCase().includes(q) ||
+      (c.first_name || "").toLowerCase().includes(q) ||
+      (c.last_name || "").toLowerCase().includes(q)
+    );
+  });
 
   const SUMMARY = [
     {
@@ -268,8 +272,9 @@ export default function ItemsOverview() {
         }}
       >
         {filtered.map((clinic) => {
-          const name = clinic.name.split("|")[0]?.trim();
-          const nameEn = clinic.name.split("|")[1]?.trim();
+          const name = clinic.name || `${clinic.first_name ?? ""} ${clinic.last_name ?? ""}`.trim();
+          const positionLabel = clinic.position === "office_staff" ? "Office Staff" : clinic.position === "clinic" ? "Clinic Staff" : null;
+          const positionColor = clinic.position === "office_staff" ? { bg: "rgba(142,200,255,0.12)", color: "#8EC8FF" } : { bg: "rgba(94,232,160,0.12)", color: "#5EE8A0" };
           const items = Number(clinic.item_count);
           const stock = Number(clinic.total_quantity);
           const value = Number(clinic.total_value);
@@ -321,17 +326,25 @@ export default function ItemsOverview() {
                     >
                       {name}
                     </div>
-                    {nameEn && (
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "var(--text-secondary)",
-                          marginTop: 1,
-                        }}
-                      >
-                        {nameEn}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
+                      <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                        {clinic.first_name} {clinic.last_name}
                       </div>
-                    )}
+                      {positionLabel && (
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "1px 6px",
+                          borderRadius: 5,
+                          background: positionColor.bg,
+                          color: positionColor.color,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}>
+                          {positionLabel}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <ChevronRight size={16} color="var(--text-secondary)" />

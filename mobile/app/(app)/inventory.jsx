@@ -16,6 +16,7 @@ import {
   StyleSheet,
   Modal,
   BackHandler,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { navForward, navBack } from "@/lib/animationStore";
@@ -105,6 +106,15 @@ function ItemDetailContent({
       showsVerticalScrollIndicator={false}
       style={{ maxHeight: "90%" }}
     >
+      {/* Item image */}
+      {item.image_data ? (
+        <Image
+          source={{ uri: `data:image/jpeg;base64,${item.image_data}` }}
+          style={detailStyles.itemImage}
+          resizeMode="cover"
+        />
+      ) : null}
+
       {/* Header */}
       <View style={detailStyles.header}>
         <View style={{ flex: 1 }}>
@@ -301,9 +311,17 @@ function ItemCard({ item, onRestock, onAddStock, onPress, t, colors, styles }) {
         onPress={onPress}
         activeOpacity={0.8}
       >
-        <View style={[styles.thumb, { backgroundColor: col.bg }]}>
-          <Text style={[styles.thumbText, { color: col.fg }]}>{initial}</Text>
-        </View>
+        {item.image_data ? (
+          <Image
+            source={{ uri: `data:image/jpeg;base64,${item.image_data}` }}
+            style={styles.thumb}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.thumb, { backgroundColor: col.bg }]}>
+            <Text style={[styles.thumbText, { color: col.fg }]}>{initial}</Text>
+          </View>
+        )}
         <View style={styles.cardInfo}>
           <Text style={styles.cardCategory} numberOfLines={1}>
             {item.category}
@@ -1072,6 +1090,13 @@ function makeStyles(c) {
 
 function makeDetailStyles(c) {
   return StyleSheet.create({
+    itemImage: {
+      width: "100%",
+      height: 180,
+      borderRadius: 14,
+      marginBottom: 16,
+      backgroundColor: c.surface,
+    },
     header: {
       flexDirection: "row",
       alignItems: "flex-start",

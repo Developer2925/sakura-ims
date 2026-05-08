@@ -743,7 +743,7 @@ export default function Dashboard() {
                           fontSize: 13,
                         }}
                       >
-                        {r.clinic_name?.split("|")[0]?.trim()}
+                        {r.clinic_name}
                       </span>
                     </td>
                     <td

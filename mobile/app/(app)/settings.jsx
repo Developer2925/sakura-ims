@@ -130,6 +130,13 @@ export default function SettingsScreen() {
         {/* Account */}
         <Text style={styles.sectionLabel}>{t('settingsAccount')}</Text>
         <View style={styles.group}>
+          <TouchableOpacity style={styles.row} onPress={() => router.push('/(app)/profile')} activeOpacity={0.8}>
+            <View style={[styles.rowIcon, { backgroundColor: getIconBoxColor('person', colors.isDark) }]}>
+              <AppIcon name="person" size={20} />
+            </View>
+            <Text style={styles.rowLabel}>Profile</Text>
+            <AppIcon name="forward" size={16} />
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]} onPress={handleLogout} activeOpacity={0.8}>
             <View style={[styles.rowIcon, styles.rowIconDestructive]}>
               <AppIcon name="logout" size={20} color="#E8909D" />

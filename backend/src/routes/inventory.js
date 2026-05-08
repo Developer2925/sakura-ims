@@ -4,14 +4,14 @@ const db = require('../db');
 
 // GET /inventory — clinic's full inventory with batches
 router.get('/', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   try {
     const [items] = await db.execute(
       `SELECT i.*, inv.quantity, inv.total_quantity_received
        FROM items i
-       JOIN inventory inv ON i.id = inv.item_id AND inv.clinic_id = ?
-       WHERE i.clinic_id = ?
+       JOIN inventory inv ON i.id = inv.item_id AND inv.user_id = ?
+       WHERE i.user_id = ?
        ORDER BY i.name ASC`,
       [clinicId, clinicId]
     );
@@ -20,7 +20,7 @@ router.get('/', auth, async (req, res) => {
     try {
       const [rows] = await db.execute(
         `SELECT * FROM item_batches
-         WHERE clinic_id = ?
+         WHERE user_id = ?
          ORDER BY expiry_date ASC, created_at ASC`,
         [clinicId]
       );
@@ -54,15 +54,15 @@ router.get('/', auth, async (req, res) => {
 
 // GET /inventory/check/:barcode — find items by barcode
 router.get('/check/:barcode', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   const { barcode } = req.params;
   try {
     const [items] = await db.execute(
       `SELECT i.*, inv.quantity, (i.price * inv.quantity) AS total_price
        FROM items i
-       JOIN inventory inv ON i.id = inv.item_id AND inv.clinic_id = ?
-       WHERE i.clinic_id = ? AND i.barcode = ?`,
+       JOIN inventory inv ON i.id = inv.item_id AND inv.user_id = ?
+       WHERE i.user_id = ? AND i.barcode = ?`,
       [clinicId, clinicId, barcode]
     );
     res.json({ exists: items.length > 0, items });
@@ -73,15 +73,15 @@ router.get('/check/:barcode', auth, async (req, res) => {
 
 // GET /inventory/search?q=name — search items by name
 router.get('/search', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   const q = `%${req.query.q || ''}%`;
   try {
     const [items] = await db.execute(
       `SELECT i.*, inv.quantity, (i.price * inv.quantity) AS total_price
        FROM items i
-       JOIN inventory inv ON i.id = inv.item_id AND inv.clinic_id = ?
-       WHERE i.clinic_id = ? AND i.name LIKE ?
+       JOIN inventory inv ON i.id = inv.item_id AND inv.user_id = ?
+       WHERE i.user_id = ? AND i.name LIKE ?
        ORDER BY i.name ASC
        LIMIT 20`,
       [clinicId, clinicId, q]
@@ -94,12 +94,12 @@ router.get('/search', auth, async (req, res) => {
 
 // GET /inventory/transactions — all clinic transactions (add + use)
 router.get('/transactions', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   try {
     const [rows] = await db.execute(
       `SELECT * FROM transactions
-       WHERE clinic_id = ?
+       WHERE user_id = ?
        ORDER BY created_at DESC
        LIMIT 200`,
       [clinicId]
@@ -112,13 +112,13 @@ router.get('/transactions', auth, async (req, res) => {
 
 // GET /inventory/:itemId/batches — batches for a specific item
 router.get('/:itemId/batches', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   const itemId = parseInt(req.params.itemId);
   try {
     const [batches] = await db.execute(
       `SELECT * FROM item_batches
-       WHERE item_id = ? AND clinic_id = ?
+       WHERE item_id = ? AND user_id = ?
        ORDER BY expiry_date ASC, created_at ASC`,
       [itemId, clinicId]
     );
@@ -133,8 +133,8 @@ router.get('/:itemId/batches', auth, async (req, res) => {
 
 // POST /inventory/use — sell/use an item (FIFO across batches, or specific batchId)
 router.post('/use', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   const { itemId, quantity, notes, batchId } = req.body;
   if (!itemId || !quantity || quantity < 1) {
     return res.status(400).json({ error: 'itemId and quantity are required' });
@@ -145,7 +145,7 @@ router.post('/use', auth, async (req, res) => {
     const [[inv]] = await conn.execute(
       `SELECT inv.quantity, i.price, i.name
        FROM inventory inv JOIN items i ON i.id = inv.item_id
-       WHERE inv.clinic_id = ? AND inv.item_id = ?`,
+       WHERE inv.user_id = ? AND inv.item_id = ?`,
       [clinicId, itemId]
     );
     if (!inv) return res.status(404).json({ error: 'Item not in inventory' });
@@ -157,7 +157,7 @@ router.post('/use', auth, async (req, res) => {
 
     if (batchId) {
       const [[batch]] = await conn.execute(
-        `SELECT * FROM item_batches WHERE id = ? AND clinic_id = ? AND item_id = ?`,
+        `SELECT * FROM item_batches WHERE id = ? AND user_id = ? AND item_id = ?`,
         [batchId, clinicId, itemId]
       );
       if (!batch) return res.status(404).json({ error: 'Batch not found' });
@@ -173,7 +173,7 @@ router.post('/use', auth, async (req, res) => {
       // FIFO: earliest expiry first (nulls last), then oldest created
       const [batches] = await conn.execute(
         `SELECT * FROM item_batches
-         WHERE item_id = ? AND clinic_id = ? AND quantity > 0
+         WHERE item_id = ? AND user_id = ? AND quantity > 0
          ORDER BY (expiry_date IS NULL) ASC, expiry_date ASC, created_at ASC`,
         [itemId, clinicId]
       );
@@ -191,11 +191,11 @@ router.post('/use', auth, async (req, res) => {
     }
 
     await conn.execute(
-      `UPDATE inventory SET quantity = quantity - ? WHERE clinic_id = ? AND item_id = ?`,
+      `UPDATE inventory SET quantity = quantity - ? WHERE user_id = ? AND item_id = ?`,
       [quantity, clinicId, itemId]
     );
     await conn.execute(
-      `INSERT INTO transactions (clinic_id, item_id, item_name, type, quantity, unit_price, notes)
+      `INSERT INTO transactions (user_id, item_id, item_name, type, quantity, unit_price, notes)
        VALUES (?, ?, ?, 'use', ?, ?, ?)`,
       [clinicId, itemId, inv.name, quantity, unitPrice, notes || null]
     );
@@ -212,8 +212,8 @@ router.post('/use', auth, async (req, res) => {
 
 // POST /inventory/add-stock — add stock, optionally as a new batch
 router.post('/add-stock', auth, async (req, res) => {
-  if (req.user.role !== 'clinic') return res.status(403).json({ error: 'Forbidden' });
-  const clinicId = req.user.clinicId;
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const clinicId = req.user.id;
   const { itemId, quantity, notes, price, expiryDate, batchId, conditionStatus = '新品' } = req.body;
   if (!itemId || !quantity || quantity < 1) {
     return res.status(400).json({ error: 'itemId and quantity are required' });
@@ -224,7 +224,7 @@ router.post('/add-stock', auth, async (req, res) => {
     const [[inv]] = await conn.execute(
       `SELECT inv.quantity, i.price, i.name
        FROM inventory inv JOIN items i ON i.id = inv.item_id
-       WHERE inv.clinic_id = ? AND inv.item_id = ?`,
+       WHERE inv.user_id = ? AND inv.item_id = ?`,
       [clinicId, itemId]
     );
     if (!inv) return res.status(404).json({ error: 'Item not in inventory' });
@@ -236,7 +236,7 @@ router.post('/add-stock', auth, async (req, res) => {
     if (batchId) {
       // Add to a specific existing batch — use that batch's actual price
       const [[batch]] = await conn.execute(
-        `SELECT * FROM item_batches WHERE id = ? AND clinic_id = ? AND item_id = ?`,
+        `SELECT * FROM item_batches WHERE id = ? AND user_id = ? AND item_id = ?`,
         [batchId, clinicId, itemId]
       );
       if (!batch) return res.status(404).json({ error: 'Batch not found' });
@@ -250,7 +250,7 @@ router.post('/add-stock', auth, async (req, res) => {
       // Find matching batch (same price + expiry + condition) or create new
       const [[existing]] = await conn.execute(
         `SELECT * FROM item_batches
-         WHERE item_id = ? AND clinic_id = ? AND price = ? AND condition_status = ?
+         WHERE item_id = ? AND user_id = ? AND price = ? AND condition_status = ?
            AND (
              (expiry_date IS NULL AND ? IS NULL)
              OR (expiry_date = ?)
@@ -264,7 +264,7 @@ router.post('/add-stock', auth, async (req, res) => {
         );
       } else {
         await conn.execute(
-          `INSERT INTO item_batches (item_id, clinic_id, price, expiry_date, quantity, condition_status)
+          `INSERT INTO item_batches (item_id, user_id, price, expiry_date, quantity, condition_status)
            VALUES (?, ?, ?, ?, ?, ?)`,
           [itemId, clinicId, batchPrice, batchExpiry, qty, conditionStatus]
         );
@@ -274,11 +274,11 @@ router.post('/add-stock', auth, async (req, res) => {
     await conn.execute(
       `UPDATE inventory
        SET quantity = quantity + ?, total_quantity_received = total_quantity_received + ?
-       WHERE clinic_id = ? AND item_id = ?`,
+       WHERE user_id = ? AND item_id = ?`,
       [qty, qty, clinicId, itemId]
     );
     await conn.execute(
-      `INSERT INTO transactions (clinic_id, item_id, item_name, type, quantity, unit_price, notes)
+      `INSERT INTO transactions (user_id, item_id, item_name, type, quantity, unit_price, notes)
        VALUES (?, ?, ?, 'add', ?, ?, ?)`,
       [clinicId, itemId, inv.name, qty, batchPrice, notes || null]
     );

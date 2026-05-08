@@ -366,8 +366,9 @@ export default function ClinicDetail() {
   if (!data) return <div className="loading">{t("noData")}</div>;
 
   const { clinic, items } = data;
-  const clinicName = clinic.name.split("|")[0]?.trim();
-  const clinicNameEn = clinic.name.split("|")[1]?.trim();
+  const clinicName = clinic.name || `${clinic.first_name ?? ""} ${clinic.last_name ?? ""}`.trim();
+  const positionLabel = clinic.position === "office_staff" ? "Office Staff" : clinic.position === "clinic" ? "Clinic Staff" : null;
+  const positionColor = clinic.position === "office_staff" ? { bg: "rgba(142,200,255,0.12)", color: "#8EC8FF" } : { bg: "rgba(94,232,160,0.12)", color: "#5EE8A0" };
   const totalValue = items.reduce((s, i) => s + Number(i.total_price), 0);
   const lowStockCount = items.filter((i) => i.quantity <= LOW_STOCK).length;
   const filtered = items.filter(
@@ -456,17 +457,25 @@ export default function ClinicDetail() {
                 >
                   {clinicName}
                 </h1>
-                {clinicNameEn && (
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: "var(--text-secondary)",
-                      marginTop: 2,
-                    }}
-                  >
-                    {clinicNameEn}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                  <div style={{ fontSize: 13, color: "var(--text-secondary)" }}>
+                    {clinic.first_name} {clinic.last_name}
                   </div>
-                )}
+                  {positionLabel && (
+                    <span style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      padding: "2px 8px",
+                      borderRadius: 6,
+                      background: positionColor.bg,
+                      color: positionColor.color,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.05em",
+                    }}>
+                      {positionLabel}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div

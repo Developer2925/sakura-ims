@@ -164,7 +164,7 @@ export default function DashboardScreen() {
         <AppLogo size="small" />
         <Text style={styles.clinicName} numberOfLines={1}>
           {(() => {
-            const name = user?.clinicName ?? "";
+            const name = user?.organizationName ?? "";
             const parts = name.split("|");
             return lang === "ja"
               ? parts[0]?.trim() || name

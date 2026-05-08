@@ -27,6 +27,7 @@ export interface Item {
   quantity: number;
   total_quantity_received: number;
   total_price: number;
+  image_data: string | null;
   batches: Batch[];
 }
 
@@ -114,6 +115,7 @@ export const api = {
     expiryDate?: string;
     quantity: number;
     barcode?: string;
+    imageData?: string;
   }) => request<{ item: Item }>('POST', '/items/manual', data),
 
   useItem: (itemId: number, quantity: number, notes?: string, batchId?: number) =>

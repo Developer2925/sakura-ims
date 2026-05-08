@@ -50,6 +50,7 @@ export const ICONS = {
   calendar: "calendar-outline",
   time: "time-outline",
   camera: "camera-outline",
+  images: "images-outline",
   car: "car-outline",
   restock: "clipboard-outline",
   cash: "cash-outline",

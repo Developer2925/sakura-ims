@@ -13,23 +13,24 @@ const T = {
     analyticsDash: 'Analytics Dashboard', usageInsights: 'Monthly usage and cost insights',
 
     // Nav
-    dashboard: 'Dashboard', clinics: 'Clinics', restockRequests: 'Restock Requests',
+    dashboard: 'Dashboard', clinics: 'Users', restockRequests: 'Restock Requests',
     analytics: 'Analytics', signOut: 'Sign Out', searchAnything: 'Search anything...',
 
     // Dashboard
-    totalClinics: 'Total Clinics', totalItems: 'Total Items',
+    totalClinics: 'Total Users', totalItems: 'Total Items',
     pendingRequests: 'Pending Requests', totalStockValue: 'Total Stock Value',
     awaitingDelivery: 'approved request(s) awaiting delivery.',
     recentRestockRequests: 'Recent Restock Requests', viewAll: 'View All',
     noRestockRequests: 'No restock requests yet',
     item: 'Item', clinic: 'Clinic', qty: 'Qty', status: 'Status', date: 'Date',
 
-    // Clinics
-    clinicList: 'Clinic List', clinicName: 'Clinic Name', passwordCol: 'Password',
+    // Users (formerly Clinics)
+    clinicList: 'User List', clinicName: 'Organization Name', passwordCol: 'Password',
     email: 'Email', items: 'Items', stock: 'Stock', value: 'Value', actions: 'Actions',
-    searchClinics: 'Search by clinic name, username, or email...',
-    noClinicsFound: 'No clinics found', inventory: 'Inventory',
-    editClinicCredentials: 'Edit Clinic Credentials', newPassword: 'New Password',
+    searchClinics: 'Search by name, username, or email...',
+    noClinicsFound: 'No users found', inventory: 'Inventory',
+    editClinicCredentials: 'Edit User Credentials', newPassword: 'New Password',
+    allUsers: 'All', clinicStaff: 'Clinic Staff', officeStaff: 'Office Staff',
     leaveBlank: '(leave blank to keep current)', enterNewPassword: 'Enter new password...',
     saveChanges: 'Save Changes', saving: 'Saving...',
     sendLoginCredentials: 'Send Login Credentials', sendingTo: 'Sending to',
@@ -86,11 +87,11 @@ const T = {
     analyticsDash: '分析ダッシュボード', usageInsights: '月次使用状況・コスト分析',
 
     // Nav
-    dashboard: 'ダッシュボード', clinics: 'クリニック', restockRequests: '補充リクエスト',
+    dashboard: 'ダッシュボード', clinics: 'ユーザー', restockRequests: '補充リクエスト',
     analytics: '分析', signOut: 'サインアウト', searchAnything: '何でも検索...',
 
     // Dashboard
-    totalClinics: 'クリニック総数', totalItems: 'アイテム総数',
+    totalClinics: 'ユーザー総数', totalItems: 'アイテム総数',
     pendingRequests: '保留中リクエスト', totalStockValue: '在庫総額',
     awaitingDelivery: '件の承認済みリクエストが納品待ちです。',
     recentRestockRequests: '最近の補充リクエスト', viewAll: 'すべて表示',
@@ -98,11 +99,12 @@ const T = {
     item: 'アイテム', clinic: 'クリニック', qty: '数量', status: 'ステータス', date: '日付',
 
     // Clinics
-    clinicList: 'クリニック一覧', clinicName: 'クリニック名', passwordCol: 'パスワード',
+    clinicList: 'ユーザー一覧', clinicName: '組織名', passwordCol: 'パスワード',
     email: 'メール', items: 'アイテム', stock: '在庫', value: '金額', actions: '操作',
-    searchClinics: 'クリニック名・ユーザー名・メールで検索...',
-    noClinicsFound: 'クリニックが見つかりません', inventory: '在庫',
-    editClinicCredentials: 'クリニック認証情報を編集', newPassword: '新しいパスワード',
+    searchClinics: '名前・ユーザー名・メールで検索...',
+    noClinicsFound: 'ユーザーが見つかりません', inventory: '在庫',
+    editClinicCredentials: 'ユーザー認証情報を編集', newPassword: '新しいパスワード',
+    allUsers: 'すべて', clinicStaff: 'クリニックスタッフ', officeStaff: 'オフィススタッフ',
     leaveBlank: '(空白のままにすると現在のパスワードを維持)', enterNewPassword: '新しいパスワードを入力...',
     saveChanges: '変更を保存', saving: '保存中...',
     sendLoginCredentials: 'ログイン情報を送信', sendingTo: '送信先',

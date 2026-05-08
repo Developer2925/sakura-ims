@@ -5,7 +5,9 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useNavigation } from "expo-router";
 import { navBack } from "@/lib/animationStore";
@@ -49,6 +51,8 @@ export default function AddManualScreen() {
   const { colors } = useTheme();
   const styles = React.useMemo(() => makeStyles(colors), [colors]);
   const [saving, setSaving] = useState(false);
+  const [imageUri, setImageUri] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
   const [form, setForm] = useState({
     name: "",
     manufacturer: "",
@@ -60,6 +64,43 @@ export default function AddManualScreen() {
     quantity: 1,
   });
   const [errors, setErrors] = useState({});
+
+  async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      showAlert("Permission required", "Allow photo access to upload an item image", undefined, "error");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      setImageUri(result.assets[0].uri);
+      setImageBase64(result.assets[0].base64);
+    }
+  }
+
+  async function takePhoto() {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      showAlert("Permission required", "Allow camera access to take a photo", undefined, "error");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      setImageUri(result.assets[0].uri);
+      setImageBase64(result.assets[0].base64);
+    }
+  }
 
   function setField(key, value) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -90,6 +131,7 @@ export default function AddManualScreen() {
         price: parseFloat(form.price),
         expiryDate: form.expiryDate.trim() || undefined,
         quantity: form.quantity,
+        imageData: imageBase64 || undefined,
       });
       showAlert(
         t("savedTitle"),
@@ -244,6 +286,30 @@ export default function AddManualScreen() {
           />
         </View>
 
+        {/* Image picker */}
+        <View style={styles.fieldGroup}>
+          <Text style={styles.fieldLabel}>Item Photo (Optional)</Text>
+          {imageUri ? (
+            <View style={styles.imagePreviewWrap}>
+              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+              <TouchableOpacity style={styles.imageRemoveBtn} onPress={() => { setImageUri(null); setImageBase64(null); }} activeOpacity={0.7}>
+                <Text style={styles.imageRemoveBtnText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.imagePickerRow}>
+              <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage} activeOpacity={0.8}>
+                <AppIcon name="images" size={18} />
+                <Text style={styles.imagePickerBtnText}>Library</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.imagePickerBtn} onPress={takePhoto} activeOpacity={0.8}>
+                <AppIcon name="camera" size={18} />
+                <Text style={styles.imagePickerBtnText}>Camera</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         <TouchableOpacity
           style={styles.ctaBtn}
           onPress={handleSave}
@@ -334,5 +400,22 @@ function makeStyles(c) {
       marginTop: 8,
     },
     ctaBtnText: { color: c.bg, fontSize: 16, fontWeight: "700" },
+    imagePickerRow: { flexDirection: "row", gap: 10 },
+    imagePickerBtn: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 14,
+      backgroundColor: c.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      borderWidth: 1,
+      borderColor: "rgba(129,128,126,0.2)",
+    },
+    imagePickerBtnText: { fontSize: 14, fontWeight: "600", color: c.textMuted },
+    imagePreviewWrap: { alignItems: "center", gap: 10 },
+    imagePreview: { width: 120, height: 120, borderRadius: 16, backgroundColor: c.surface },
+    imageRemoveBtn: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, backgroundColor: "rgba(239,68,68,0.1)" },
+    imageRemoveBtnText: { fontSize: 13, fontWeight: "600", color: "#EF4444" },
   });
 }

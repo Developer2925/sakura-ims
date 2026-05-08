@@ -11,8 +11,10 @@ import { useTheme } from "@/lib/theme";
 import { AppIcon } from "@/components/AppIcons";
 import { useLocalSearchParams } from "expo-router";
 import { navBack } from '@/lib/animationStore';
+import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
 import {
-  ScrollView, StyleSheet, Text, TouchableOpacity, View,
+  ScrollView, StyleSheet, Text, TouchableOpacity, View, Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -29,11 +31,53 @@ export default function AddNewItemScreen() {
   const { colors } = useTheme();
   const styles = React.useMemo(() => makeStyles(colors), [colors]);
   const [saving, setSaving] = useState(false);
+  const [imageUri, setImageUri] = useState(null);
+  const [imageBase64, setImageBase64] = useState(null);
   const [form, setForm] = useState({
     name: "", manufacturer: "", category: "", customCategory: "",
     condition: "新品", price: "", expiryDate: "", quantity: 1,
   });
   const [errors, setErrors] = useState({});
+
+  async function compressImage(uri) {
+    const compressed = await ImageManipulator.manipulateAsync(
+      uri,
+      [{ resize: { width: 600 } }],
+      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+    );
+    return compressed;
+  }
+
+  async function pickImage() {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") return;
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      const compressed = await compressImage(result.assets[0].uri);
+      setImageUri(compressed.uri);
+      setImageBase64(compressed.base64);
+    }
+  }
+
+  async function takePhoto() {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") return;
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+    if (!result.canceled && result.assets?.[0]) {
+      const compressed = await compressImage(result.assets[0].uri);
+      setImageUri(compressed.uri);
+      setImageBase64(compressed.base64);
+    }
+  }
 
   function setField(key, value) {
     setForm((p) => ({ ...p, [key]: value }));
@@ -63,6 +107,7 @@ export default function AddNewItemScreen() {
         price: parseFloat(form.price),
         expiryDate: form.expiryDate.trim() || undefined,
         quantity: form.quantity,
+        imageData: imageBase64 || undefined,
       });
       showAlert(
         t('savedTitle'),
@@ -193,6 +238,30 @@ export default function AddNewItemScreen() {
           <QuantityControl value={form.quantity} onChange={(v) => setField("quantity", v)} min={1} />
         </View>
 
+        {/* Image picker */}
+        <View style={styles.chipGroup}>
+          <Text style={styles.chipGroupLabel}>Item Photo (Optional)</Text>
+          {imageUri ? (
+            <View style={{ alignItems: "center", gap: 10 }}>
+              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+              <TouchableOpacity style={styles.imageRemoveBtn} onPress={() => { setImageUri(null); setImageBase64(null); }} activeOpacity={0.7}>
+                <Text style={styles.imageRemoveBtnText}>Remove</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.imagePickerRow}>
+              <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage} activeOpacity={0.8}>
+                <AppIcon name="images" size={18} />
+                <Text style={styles.imagePickerBtnText}>Library</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.imagePickerBtn} onPress={takePhoto} activeOpacity={0.8}>
+                <AppIcon name="camera" size={18} />
+                <Text style={styles.imagePickerBtnText}>Camera</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+
         <TouchableOpacity style={styles.ctaBtn} onPress={handleSave} activeOpacity={0.85} disabled={saving}>
           <Text style={styles.ctaBtnText}>{t('saveItem')}</Text>
         </TouchableOpacity>
@@ -259,5 +328,16 @@ function makeStyles(c) {
       marginTop: 8, backgroundColor: "rgba(129,128,126,0.1)",
     },
     manualBtnText: { color: c.textMuted, fontSize: 14, fontWeight: "600" },
+    imagePickerRow: { flexDirection: "row", gap: 10 },
+    imagePickerBtn: {
+      flex: 1, paddingVertical: 14, borderRadius: 14,
+      backgroundColor: c.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+      alignItems: "center", justifyContent: "center", gap: 6,
+      borderWidth: 1, borderColor: "rgba(129,128,126,0.2)",
+    },
+    imagePickerBtnText: { fontSize: 14, fontWeight: "600", color: c.textMuted },
+    imagePreview: { width: 120, height: 120, borderRadius: 16, backgroundColor: c.surface },
+    imageRemoveBtn: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, backgroundColor: "rgba(239,68,68,0.1)" },
+    imageRemoveBtnText: { fontSize: 13, fontWeight: "600", color: "#EF4444" },
   });
 }

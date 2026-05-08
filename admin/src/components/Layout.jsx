@@ -1,12 +1,12 @@
 import {
   BarChart3,
-  Building2,
   LayoutDashboard,
   LogOut,
   Moon,
   PackageSearch,
   Sun,
   TrendingUp,
+  Users,
 } from "lucide-react";
 import logoDark from "../assets/logo.png";
 import logoLight from "../assets/logo-light.png";
@@ -46,7 +46,7 @@ const NAV_SECTIONS = [
   {
     label: "MANAGEMENT",
     items: [
-      { path: "/clinics", key: "clinics", Icon: Building2 },
+      { path: "/clinics", key: "clinics", Icon: Users },
       { path: "/restock", key: "restockRequests", Icon: PackageSearch },
     ],
   },

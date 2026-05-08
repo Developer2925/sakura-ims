@@ -8,16 +8,15 @@ import {
   ChevronRight,
   Layers,
   Pencil,
-  Send,
   Eye,
   EyeOff,
-  CheckCircle,
   TrendingUp,
   Package,
   Trash2,
   AlertTriangle,
   RefreshCw,
 } from "lucide-react";
+
 
 // ── Edit Credentials Modal ────────────────────────────────────────────────────
 function EditModal({ clinic, onClose, onSaved }) {
@@ -154,198 +153,12 @@ function EditModal({ clinic, onClose, onSaved }) {
   );
 }
 
-// ── Send Credentials Modal ────────────────────────────────────────────────────
-function SendModal({ clinic, onClose }) {
-  const { t } = useLang();
-  const [password, setPassword] = useState(clinic.plain_password || "");
-  const [showPw, setShowPw] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSend() {
-    if (!password.trim()) {
-      setError(t("passwordToSend") + " is required.");
-      return;
-    }
-    if (!clinic.email) {
-      setError(t("noEmailSet"));
-      return;
-    }
-    setSending(true);
-    setError("");
-    try {
-      await api.sendCredentials(clinic.id, password);
-      setSent(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSending(false);
-    }
-  }
-
-  const clinicShortName = clinic.name.split("|")[0]?.trim();
-
-  return (
-    <div
-      className="modal-overlay"
-      onClick={(e) => e.target === e.currentTarget && !sent && onClose()}
-    >
-      <div className="modal">
-        {sent ? (
-          <>
-            <div style={{ textAlign: "center", padding: "12px 0 24px" }}>
-              <div
-                style={{
-                  marginBottom: 12,
-                  display: "flex",
-                  justifyContent: "center",
-                }}
-              >
-                <CheckCircle size={48} color="var(--green, #10B981)" />
-              </div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>
-                {t("credentialsSent")}
-              </h2>
-              <p style={{ color: "#9CA3AF", fontSize: 14 }}>
-                {t("loginDetailsEmailed")}
-                <br />
-                <strong style={{ color: "#1A1A1A" }}>{clinic.email}</strong>
-              </p>
-            </div>
-            <div className="modal-footer" style={{ justifyContent: "center" }}>
-              <button className="btn-primary" onClick={onClose}>
-                {t("done")}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2
-              className="modal-title"
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
-              <Send size={18} /> {t("sendLoginCredentials")}
-            </h2>
-
-            <div
-              style={{
-                background: "var(--bg)",
-                borderRadius: 10,
-                padding: "12px 14px",
-                marginBottom: 18,
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#9CA3AF",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                }}
-              >
-                {t("sendingTo")}
-              </div>
-              <div style={{ fontWeight: 700 }}>{clinicShortName}</div>
-              <div
-                style={{
-                  fontFamily: "monospace",
-                  color: "#5B8DEF",
-                  fontSize: 13,
-                }}
-              >
-                {clinic.username}
-              </div>
-              <div
-                style={{
-                  color: clinic.email ? "#1A1A1A" : "#E8909D",
-                  fontSize: 13,
-                }}
-              >
-                {clinic.email || t("noEmailSet")}
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">{t("passwordToSend")}</label>
-              <div className="input-reveal">
-                <input
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError("");
-                  }}
-                  placeholder={t("typePassword")}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  className="reveal-btn"
-                  onClick={() => setShowPw((v) => !v)}
-                >
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-              <div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 4 }}>
-                {t("passwordNote")}
-              </div>
-            </div>
-
-            {error && (
-              <div
-                style={{
-                  color: "#EF4444",
-                  fontSize: 13,
-                  marginBottom: 12,
-                  padding: "8px 12px",
-                  background: "#FEE2E2",
-                  borderRadius: 8,
-                }}
-              >
-                {error}
-              </div>
-            )}
-
-            <div className="modal-footer">
-              <button
-                className="btn-secondary"
-                onClick={onClose}
-                disabled={sending}
-              >
-                {t("cancel")}
-              </button>
-              <button
-                className="btn-info"
-                onClick={handleSend}
-                disabled={sending || !clinic.email}
-              >
-                {sending ? (
-                  t("sending")
-                ) : (
-                  <>
-                    <Send size={13} /> {t("sendEmail")}
-                  </>
-                )}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Delete Clinic Data Modal ──────────────────────────────────────────────────
 function DeleteModal({ clinic, onClose, onCleared }) {
   const { t } = useLang();
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
-  const name = clinic.name.split("|")[0]?.trim();
+  const name = clinic.name || `${clinic.first_name ?? ""} ${clinic.last_name ?? ""}`.trim();
 
   async function handleDelete() {
     setDeleting(true);
@@ -510,8 +323,8 @@ export default function Clinics() {
   const [clinics, setClinics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [positionFilter, setPositionFilter] = useState("all");
   const [editClinic, setEditClinic] = useState(null);
-  const [sendClinic, setSendClinic] = useState(null);
   const [deleteClinic, setDeleteClinic] = useState(null);
   const containerRef = useRef(null);
 
@@ -562,12 +375,18 @@ export default function Clinics() {
     );
   }
 
-  const filtered = clinics.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.username.toLowerCase().includes(search.toLowerCase()) ||
-      (c.email || "").toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = clinics.filter((c) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      (c.name || "").toLowerCase().includes(q) ||
+      (c.username || "").toLowerCase().includes(q) ||
+      (c.email || "").toLowerCase().includes(q) ||
+      (c.first_name || "").toLowerCase().includes(q) ||
+      (c.last_name || "").toLowerCase().includes(q);
+    const matchesPosition =
+      positionFilter === "all" || c.position === positionFilter;
+    return matchesSearch && matchesPosition;
+  });
 
   if (loading)
     return (
@@ -602,7 +421,7 @@ export default function Clinics() {
               marginTop: 2,
             }}
           >
-            {clinics.length} {t("clinics")}
+            {filtered.length} {t("clinics")}
           </div>
         </div>
         <button
@@ -616,13 +435,49 @@ export default function Clinics() {
         </button>
       </div>
 
-      {/* Search */}
-      <div style={{ marginBottom: 20 }}>
+      {/* Position filter + Search */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+        {[
+          { key: "all", label: t("allUsers") },
+          { key: "clinic", label: t("clinicStaff") },
+          { key: "office_staff", label: t("officeStaff") },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setPositionFilter(key)}
+            style={{
+              padding: "6px 16px",
+              borderRadius: 20,
+              border: "1.5px solid",
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.15s",
+              borderColor: positionFilter === key ? "var(--accent)" : "var(--border)",
+              background: positionFilter === key ? "var(--accent-dim)" : "transparent",
+              color: positionFilter === key ? "var(--accent)" : "var(--text-secondary)",
+            }}
+          >
+            {label}
+            <span style={{
+              marginLeft: 6,
+              fontSize: 11,
+              background: positionFilter === key ? "var(--accent)" : "var(--surface-2)",
+              color: positionFilter === key ? "var(--bg)" : "var(--text-secondary)",
+              borderRadius: 10,
+              padding: "1px 6px",
+            }}>
+              {key === "all"
+                ? clinics.length
+                : clinics.filter((c) => c.position === key).length}
+            </span>
+          </button>
+        ))}
         <input
           placeholder={t("searchClinics")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ maxWidth: 400 }}
+          style={{ flex: 1, maxWidth: 360 }}
         />
       </div>
 
@@ -635,8 +490,9 @@ export default function Clinics() {
         }}
       >
         {filtered.map((clinic) => {
-          const name = clinic.name.split("|")[0]?.trim();
-          const nameEn = clinic.name.split("|")[1]?.trim();
+          const name = clinic.name || `${clinic.first_name ?? ""} ${clinic.last_name ?? ""}`.trim();
+          const positionLabel = clinic.position === "office_staff" ? "Office Staff" : clinic.position === "clinic" ? "Clinic Staff" : null;
+          const positionColor = clinic.position === "office_staff" ? { bg: "rgba(142,200,255,0.12)", color: "#8EC8FF" } : { bg: "rgba(94,232,160,0.12)", color: "#5EE8A0" };
           const value = Number(clinic.total_value);
 
           return (
@@ -687,17 +543,25 @@ export default function Clinics() {
                     >
                       {name}
                     </div>
-                    {nameEn && (
-                      <div
-                        style={{
-                          fontSize: 11,
-                          color: "var(--text-secondary)",
-                          marginTop: 2,
-                        }}
-                      >
-                        {nameEn}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+                      <div style={{ fontSize: 11, color: "var(--text-secondary)" }}>
+                        {clinic.first_name} {clinic.last_name}
                       </div>
-                    )}
+                      {positionLabel && (
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: "2px 7px",
+                          borderRadius: 6,
+                          background: positionColor.bg,
+                          color: positionColor.color,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}>
+                          {positionLabel}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div
@@ -711,24 +575,6 @@ export default function Clinics() {
                     title={t("edit")}
                   >
                     <Pencil size={13} />
-                  </button>
-                  <button
-                    className="btn-ghost"
-                    style={{
-                      padding: "6px 10px",
-                      fontSize: 12,
-                      color: clinic.email
-                        ? "var(--accent-2)"
-                        : "var(--text-secondary)",
-                    }}
-                    onClick={() => setSendClinic(clinic)}
-                    title={
-                      clinic.email
-                        ? `${t("sendTo")} ${clinic.email}`
-                        : t("setEmailFirst")
-                    }
-                  >
-                    <Send size={13} />
                   </button>
                   <button
                     className="btn-ghost"
@@ -901,9 +747,6 @@ export default function Clinics() {
           onClose={() => setEditClinic(null)}
           onSaved={handleSaved}
         />
-      )}
-      {sendClinic && (
-        <SendModal clinic={sendClinic} onClose={() => setSendClinic(null)} />
       )}
       {deleteClinic && (
         <DeleteModal
