@@ -2,17 +2,8 @@ const router = require("express").Router();
 const auth = require("../middleware/auth");
 const db = require("../db");
 const bcrypt = require("bcrypt");
-const nodemailer = require("nodemailer");
-
-function makeTransporter() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT) || 465,
-    secure: process.env.SMTP_SECURE === 'true',
-    family: 4,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-}
+const { Resend } = require("resend");
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function requireAdmin(req, res, next) {
   if (req.user.role !== "admin")
@@ -127,9 +118,8 @@ router.post(
           .json({ error: "No email address set for this clinic" });
 
       const clinicName = clinic.organization_name || "";
-      const transporter = makeTransporter();
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      await resend.emails.send({
+        from: process.env.RESEND_FROM || 'onboarding@resend.dev',
         to: clinic.email,
         subject: `ログイン情報 / Login Credentials — ${clinicName}`,
         html: `

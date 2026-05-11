@@ -2,7 +2,8 @@ const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 const authMiddleware = require('../middleware/auth');
 const { OAuth2Client } = require('google-auth-library');
 
@@ -12,16 +13,6 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const pendingRegistrations = new Map(); // email → { otp, firstName, lastName, position, passwordHash, expiresAt }
 const pendingResets        = new Map(); // email → { otp, expiresAt }
 const pendingEmailChange   = new Map(); // userId → { otp, newEmail, expiresAt }
-
-function makeTransporter() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT) || 465,
-    secure: process.env.SMTP_SECURE === 'true',
-    family: 4,
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-  });
-}
 
 function generateOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -45,9 +36,8 @@ function signToken(user) {
 }
 
 async function sendOTPEmail(to, otp, subject = 'Your Verification Code') {
-  const transporter = makeTransporter();
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+  await resend.emails.send({
+    from: process.env.RESEND_FROM || 'onboarding@resend.dev',
     to,
     subject,
     html: `
