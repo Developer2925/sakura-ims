@@ -2,8 +2,6 @@ const router = require("express").Router();
 const auth = require("../middleware/auth");
 const db = require("../db");
 const bcrypt = require("bcrypt");
-const { Resend } = require("resend");
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 function requireAdmin(req, res, next) {
   if (req.user.role !== "admin")
@@ -118,32 +116,43 @@ router.post(
           .json({ error: "No email address set for this clinic" });
 
       const clinicName = clinic.organization_name || "";
-      await resend.emails.send({
-        from: process.env.RESEND_FROM || 'onboarding@resend.dev',
-        to: clinic.email,
-        subject: `ログイン情報 / Login Credentials — ${clinicName}`,
-        html: `
-        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f7f8fc;border-radius:12px">
-          <h2 style="color:#1A1A1A;margin-bottom:8px">クリニック在庫システム</h2>
-          <p style="color:#9CA3AF;margin-bottom:24px">Clinic Inventory System — Login Credentials</p>
-          <div style="background:#fff;border-radius:10px;padding:20px;margin-bottom:20px">
-            <p style="margin:0 0 12px;color:#9CA3AF;font-size:13px">CLINIC / クリニック</p>
-            <p style="margin:0;font-size:16px;font-weight:700;color:#1A1A1A">${clinicName}</p>
-          </div>
-          <div style="background:#fff;border-radius:10px;padding:20px;margin-bottom:20px">
-            <p style="margin:0 0 8px;color:#9CA3AF;font-size:13px">USERNAME / ユーザー名</p>
-            <p style="margin:0;font-family:monospace;font-size:18px;font-weight:700;color:#5B8DEF">${clinic.username}</p>
-          </div>
-          <div style="background:#fff;border-radius:10px;padding:20px;margin-bottom:24px">
-            <p style="margin:0 0 8px;color:#9CA3AF;font-size:13px">PASSWORD / パスワード</p>
-            <p style="margin:0;font-family:monospace;font-size:18px;font-weight:700;color:#5B8DEF">${password}</p>
-          </div>
-          <p style="color:#9CA3AF;font-size:12px;text-align:center">
-            Keep these credentials secure. / これらの認証情報を安全に保管してください。
-          </p>
-        </div>
-      `,
+      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': process.env.BREVO_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: '医療法人さくら会', email: process.env.BREVO_FROM },
+          to: [{ email: clinic.email }],
+          subject: `ログイン情報 / Login Credentials — ${clinicName}`,
+          htmlContent: `
+            <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px;background:#f7f8fc;border-radius:12px">
+              <h2 style="color:#1A1A1A;margin-bottom:8px">クリニック在庫システム</h2>
+              <p style="color:#9CA3AF;margin-bottom:24px">Clinic Inventory System — Login Credentials</p>
+              <div style="background:#fff;border-radius:10px;padding:20px;margin-bottom:20px">
+                <p style="margin:0 0 12px;color:#9CA3AF;font-size:13px">CLINIC / クリニック</p>
+                <p style="margin:0;font-size:16px;font-weight:700;color:#1A1A1A">${clinicName}</p>
+              </div>
+              <div style="background:#fff;border-radius:10px;padding:20px;margin-bottom:20px">
+                <p style="margin:0 0 8px;color:#9CA3AF;font-size:13px">USERNAME / ユーザー名</p>
+                <p style="margin:0;font-family:monospace;font-size:18px;font-weight:700;color:#5B8DEF">${clinic.username}</p>
+              </div>
+              <div style="background:#fff;border-radius:10px;padding:20px;margin-bottom:24px">
+                <p style="margin:0 0 8px;color:#9CA3AF;font-size:13px">PASSWORD / パスワード</p>
+                <p style="margin:0;font-family:monospace;font-size:18px;font-weight:700;color:#5B8DEF">${password}</p>
+              </div>
+              <p style="color:#9CA3AF;font-size:12px;text-align:center">
+                Keep these credentials secure. / これらの認証情報を安全に保管してください。
+              </p>
+            </div>
+          `,
+        }),
       });
+      if (!emailRes.ok) {
+        const errData = await emailRes.json();
+        throw new Error(errData.message || 'Failed to send email');
+      }
       res.json({ success: true, sentTo: clinic.email });
     } catch (err) {
       console.error(err);
@@ -230,10 +239,9 @@ router.delete("/clinics/:id/data", auth, requireAdmin, async (req, res) => {
   try {
     await conn.beginTransaction();
 
-    const [[clinic]] = await conn.execute(
-      "SELECT id FROM users WHERE id = ?",
-      [id],
-    );
+    const [[clinic]] = await conn.execute("SELECT id FROM users WHERE id = ?", [
+      id,
+    ]);
     if (!clinic) {
       await conn.rollback();
       return res.status(404).json({ error: "Clinic not found" });
@@ -241,9 +249,7 @@ router.delete("/clinics/:id/data", auth, requireAdmin, async (req, res) => {
 
     // Order matters: delete dependents before parents (no CASCADE without clinic delete)
     await conn.execute("DELETE FROM restock_logs WHERE user_id = ?", [id]);
-    await conn.execute("DELETE FROM restock_requests WHERE user_id = ?", [
-      id,
-    ]);
+    await conn.execute("DELETE FROM restock_requests WHERE user_id = ?", [id]);
     await conn.execute("DELETE FROM transactions WHERE user_id = ?", [id]);
     // Deleting items cascades inventory + item_batches (both have ON DELETE CASCADE on item_id)
     await conn.execute("DELETE FROM items WHERE user_id = ?", [id]);

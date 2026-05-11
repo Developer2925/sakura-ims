@@ -2,8 +2,6 @@ const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const db = require('../db');
-const { Resend } = require('resend');
-const resend = new Resend(process.env.RESEND_API_KEY);
 const authMiddleware = require('../middleware/auth');
 const { OAuth2Client } = require('google-auth-library');
 
@@ -36,19 +34,30 @@ function signToken(user) {
 }
 
 async function sendOTPEmail(to, otp, subject = 'Your Verification Code') {
-  await resend.emails.send({
-    from: process.env.RESEND_FROM || 'onboarding@resend.dev',
-    to,
-    subject,
-    html: `
-      <div style="font-family:sans-serif;max-width:480px;margin:auto">
-        <h2 style="margin-bottom:8px">${subject}</h2>
-        <p>Your verification code is:</p>
-        <div style="font-size:36px;font-weight:800;letter-spacing:8px;padding:16px 0;color:#1a1a1a">${otp}</div>
-        <p style="color:#888">Expires in 10 minutes. Do not share this code.</p>
-      </div>
-    `,
+  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': process.env.BREVO_API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: '医療法人さくら会', email: process.env.BREVO_FROM },
+      to: [{ email: to }],
+      subject,
+      htmlContent: `
+        <div style="font-family:sans-serif;max-width:480px;margin:auto">
+          <h2 style="margin-bottom:8px">${subject}</h2>
+          <p>Your verification code is:</p>
+          <div style="font-size:36px;font-weight:800;letter-spacing:8px;padding:16px 0;color:#1a1a1a">${otp}</div>
+          <p style="color:#888">Expires in 10 minutes. Do not share this code.</p>
+        </div>
+      `,
+    }),
   });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || 'Failed to send email');
+  }
 }
 
 // ── Login ─────────────────────────────────────────────────────────────────────
