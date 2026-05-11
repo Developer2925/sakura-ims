@@ -293,4 +293,30 @@ router.post('/add-stock', auth, async (req, res) => {
   }
 });
 
+// PUT /inventory/batches/:batchId — edit a batch (price, expiry, condition)
+router.put('/batches/:batchId', auth, async (req, res) => {
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const { batchId } = req.params;
+  const { price, expiryDate, condition } = req.body;
+  try {
+    const [rows] = await db.execute('SELECT id FROM item_batches WHERE id = ? AND user_id = ?', [batchId, req.user.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Batch not found' });
+
+    const fields = [];
+    const values = [];
+    if (price !== undefined)      { fields.push('price = ?');            values.push(parseFloat(price)); }
+    if (expiryDate !== undefined) { fields.push('expiry_date = ?');      values.push(expiryDate || null); }
+    if (condition !== undefined)  { fields.push('condition_status = ?'); values.push(condition); }
+
+    if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
+    values.push(batchId, req.user.id);
+    await db.execute(`UPDATE item_batches SET ${fields.join(', ')} WHERE id = ? AND user_id = ?`, values);
+    const [[batch]] = await db.execute('SELECT * FROM item_batches WHERE id = ? AND user_id = ?', [batchId, req.user.id]);
+    res.json({ batch });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;
