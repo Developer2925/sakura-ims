@@ -15,11 +15,11 @@ const pendingEmailChange   = new Map(); // userId → { otp, newEmail, expiresAt
 
 function makeTransporter() {
   return nodemailer.createTransport({
-    host: '74.125.133.108',
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: Number(process.env.SMTP_PORT) || 465,
     secure: process.env.SMTP_SECURE === 'true',
+    family: 4,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
-    tls: { servername: 'smtp.gmail.com' },
   });
 }
 
@@ -151,12 +151,11 @@ router.post('/forgot-password', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'email required' });
   try {
     const [rows] = await db.execute('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
-    if (rows.length) {
-      const otp = generateOTP();
-      pendingResets.set(email.toLowerCase(), { otp, expiresAt: Date.now() + 10 * 60 * 1000 });
-      await sendOTPEmail(email, otp, 'Password Reset Code');
-    }
-    res.json({ message: 'If that email exists, a reset code was sent' });
+    if (!rows.length) return res.status(404).json({ error: 'No account found with that email' });
+    const otp = generateOTP();
+    pendingResets.set(email.toLowerCase(), { otp, expiresAt: Date.now() + 10 * 60 * 1000 });
+    await sendOTPEmail(email, otp, 'Password Reset Code');
+    res.json({ message: 'Reset code sent' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
