@@ -55,4 +55,37 @@ router.post('/manual', auth, async (req, res) => {
   }
 });
 
+router.put('/:itemId', auth, async (req, res) => {
+  if (req.user.role !== 'user') return res.status(403).json({ error: 'Forbidden' });
+  const { itemId } = req.params;
+  const { name, manufacturer, category, condition, price, expiryDate, imageData } = req.body;
+  try {
+    const [rows] = await db.execute('SELECT id FROM items WHERE id = ? AND user_id = ?', [itemId, req.user.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Item not found' });
+
+    const fields = [];
+    const values = [];
+    if (name !== undefined)         { fields.push('name = ?');             values.push(name); }
+    if (manufacturer !== undefined) { fields.push('manufacturer = ?');     values.push(manufacturer); }
+    if (category !== undefined)     { fields.push('category = ?');         values.push(category); }
+    if (condition !== undefined)    { fields.push('condition_status = ?'); values.push(condition); }
+    if (price !== undefined)        { fields.push('price = ?');            values.push(parseFloat(price)); }
+    if (expiryDate !== undefined)   { fields.push('expiry_date = ?');      values.push(expiryDate || null); }
+    if (imageData !== undefined)    { fields.push('image_data = ?');       values.push(imageData || null); }
+
+    if (!fields.length) return res.status(400).json({ error: 'Nothing to update' });
+    values.push(itemId, req.user.id);
+    await db.execute(`UPDATE items SET ${fields.join(', ')}, updated_at = NOW() WHERE id = ? AND user_id = ?`, values);
+    const [updated] = await db.execute(
+      `SELECT i.*, inv.quantity, inv.total_quantity_received, (i.price * inv.quantity) AS total_price
+       FROM items i JOIN inventory inv ON i.id = inv.item_id AND inv.user_id = i.user_id WHERE i.id = ?`,
+      [itemId]
+    );
+    res.json({ item: updated[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

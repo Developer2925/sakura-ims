@@ -152,6 +152,22 @@ export const api = {
   clearAllNotifications: () =>
     request<{ ok: boolean }>('DELETE', '/notifications'),
 
+  updateItem: (itemId: number, data: {
+    name?: string;
+    manufacturer?: string;
+    category?: string;
+    condition?: string;
+    price?: number;
+    expiryDate?: string;
+    imageData?: string | null;
+  }) => request<{ item: Item }>('PUT', `/items/${itemId}`, data),
+
+  updateBatch: (batchId: number, data: {
+    price?: number;
+    expiryDate?: string;
+    condition?: string;
+  }) => request<{ batch: Batch }>('PUT', `/inventory/batches/${batchId}`, data),
+
   confirmDelivery: (data: {
     requestId: number;
     price: number;

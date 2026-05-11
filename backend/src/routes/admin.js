@@ -116,14 +116,14 @@ router.post(
           .json({ error: "No email address set for this clinic" });
 
       const clinicName = clinic.organization_name || "";
-      const emailRes = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
+      const emailRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
         headers: {
-          'api-key': process.env.BREVO_API_KEY,
-          'Content-Type': 'application/json',
+          "api-key": process.env.BREVO_API_KEY,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sender: { name: '医療法人さくら会', email: process.env.BREVO_FROM },
+          sender: { name: "医療法人さくら会", email: process.env.BREVO_FROM },
           to: [{ email: clinic.email }],
           subject: `ログイン情報 / Login Credentials — ${clinicName}`,
           htmlContent: `
@@ -151,7 +151,7 @@ router.post(
       });
       if (!emailRes.ok) {
         const errData = await emailRes.json();
-        throw new Error(errData.message || 'Failed to send email');
+        throw new Error(errData.message || "Failed to send email");
       }
       res.json({ success: true, sentTo: clinic.email });
     } catch (err) {

@@ -21,7 +21,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { navForward, navBack } from "@/lib/animationStore";
 import { useFocusEffect } from "@react-navigation/native";
-import { AppIcon, ICONS, ICON_SIZES, getIconBoxColor } from "@/components/AppIcons";
+import {
+  AppIcon,
+  ICONS,
+  ICON_SIZES,
+  getIconBoxColor,
+} from "@/components/AppIcons";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useLang } from "@/lib/i18n";
@@ -50,29 +55,20 @@ function BatchRow({ batch, isLast, colors }) {
     <View style={[batchStyles.row, !isLast && batchStyles.rowBorder]}>
       <View style={batchStyles.left}>
         <View style={batchStyles.priceChip}>
-          <AppIcon
-            name="price"
-            size={11}
-          />
+          <AppIcon name="price" size={11} />
           <Text style={batchStyles.price}>
             ¥{Number(batch.price).toFixed(2)}
           </Text>
         </View>
         {expiry ? (
           <View style={batchStyles.expiryChip}>
-            <AppIcon
-              name="calendar"
-              size={11}
-            />
+            <AppIcon name="calendar" size={11} />
             <Text style={batchStyles.expiry}>{expiry}</Text>
           </View>
         ) : null}
         {batch.condition_status ? (
           <View style={batchStyles.expiryChip}>
-            <AppIcon
-              name="checkCircleOutline"
-              size={11}
-            />
+            <AppIcon name="checkCircleOutline" size={11} />
             <Text style={batchStyles.expiry}>
               {tCondition(batch.condition_status)}
             </Text>
@@ -93,6 +89,7 @@ function ItemDetailContent({
   onClose,
   onAddStock,
   onRestock,
+  onEdit,
   colors,
 }) {
   const { tCondition } = useLang();
@@ -146,19 +143,13 @@ function ItemDetailContent({
       <View style={detailStyles.metaRow}>
         {item.manufacturer ? (
           <View style={detailStyles.metaChip}>
-            <AppIcon
-              name="business"
-              size={12}
-            />
+            <AppIcon name="business" size={12} />
             <Text style={detailStyles.metaChipText}>{item.manufacturer}</Text>
           </View>
         ) : null}
         {item.condition_status ? (
           <View style={detailStyles.metaChip}>
-            <AppIcon
-              name="checkCircleOutline"
-              size={12}
-            />
+            <AppIcon name="checkCircleOutline" size={12} />
             <Text style={detailStyles.metaChipText}>
               {tCondition(item.condition_status)}
             </Text>
@@ -204,10 +195,7 @@ function ItemDetailContent({
                       gap: 5,
                     }}
                   >
-                    <AppIcon
-                      name="price"
-                      size={12}
-                    />
+                    <AppIcon name="price" size={12} />
                     <Text style={detailStyles.batchPrice}>
                       ¥{Number(batch.price).toFixed(2)}
                     </Text>
@@ -220,10 +208,7 @@ function ItemDetailContent({
                         gap: 5,
                       }}
                     >
-                      <AppIcon
-                        name="calendar"
-                        size={12}
-                      />
+                      <AppIcon name="calendar" size={12} />
                       <Text style={detailStyles.batchExpiry}>{expiry}</Text>
                     </View>
                   ) : null}
@@ -235,10 +220,7 @@ function ItemDetailContent({
                         gap: 5,
                       }}
                     >
-                      <AppIcon
-                        name="checkCircleOutline"
-                        size={12}
-                      />
+                      <AppIcon name="checkCircleOutline" size={12} />
                       <Text style={detailStyles.batchExpiry}>
                         {tCondition(batch.condition_status)}
                       </Text>
@@ -270,10 +252,7 @@ function ItemDetailContent({
           }}
           activeOpacity={0.85}
         >
-          <AppIcon
-            name="arrowUp"
-            size={16}
-          />
+          <AppIcon name="arrowUp" size={16} />
           <Text style={detailStyles.actionBtnSecondaryText}>
             {t("restockRequest")}
           </Text>
@@ -290,13 +269,35 @@ function ItemDetailContent({
           <Text style={detailStyles.actionBtnPrimaryText}>{t("addStock")}</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity
+        style={[detailStyles.actionBtnSecondary, { marginTop: 8 }]}
+        onPress={() => {
+          onClose();
+          onEdit(item);
+        }}
+        activeOpacity={0.85}
+      >
+        <AppIcon name="edit" size={16} />
+        <Text style={detailStyles.actionBtnSecondaryText}>
+          {t("editItemTitle")}
+        </Text>
+      </TouchableOpacity>
 
       <View style={{ height: 8 }} />
     </ScrollView>
   );
 }
 
-function ItemCard({ item, onRestock, onAddStock, onPress, t, colors, styles }) {
+function ItemCard({
+  item,
+  onRestock,
+  onAddStock,
+  onPress,
+  onEdit,
+  t,
+  colors,
+  styles,
+}) {
   const { tCondition } = useLang();
   const col = getCatColor(item.category, colors.isDark);
   const initial = item.name?.[0]?.toUpperCase() ?? "?";
@@ -340,10 +341,7 @@ function ItemCard({ item, onRestock, onAddStock, onPress, t, colors, styles }) {
           <View style={styles.metaRow}>
             {item.manufacturer ? (
               <View style={styles.metaChip}>
-                <AppIcon
-                  name="business"
-                  size={10}
-                />
+                <AppIcon name="business" size={10} />
                 <Text style={styles.metaChipText} numberOfLines={1}>
                   {item.manufacturer}
                 </Text>
@@ -351,10 +349,7 @@ function ItemCard({ item, onRestock, onAddStock, onPress, t, colors, styles }) {
             ) : null}
             {item.condition_status ? (
               <View style={styles.metaChip}>
-                <AppIcon
-                  name="checkCircleOutline"
-                  size={10}
-                />
+                <AppIcon name="checkCircleOutline" size={10} />
                 <Text style={styles.metaChipText} numberOfLines={1}>
                   {tCondition(item.condition_status)}
                 </Text>
@@ -397,20 +392,14 @@ function ItemCard({ item, onRestock, onAddStock, onPress, t, colors, styles }) {
         ) : (
           /* Fallback when migration hasn't run yet */
           <View style={styles.priceRow}>
-            <AppIcon
-              name="price"
-              size={13}
-            />
+            <AppIcon name="price" size={13} />
             <Text style={styles.unitPrice}>
               ¥{Number(item.price).toFixed(2)} / {t("pieces")}
             </Text>
             {item.expiry_date && (
               <>
                 <Text style={styles.separator}>·</Text>
-                <AppIcon
-                  name="calendar"
-                  size={12}
-                />
+                <AppIcon name="calendar" size={12} />
                 <Text style={styles.expiryText}>
                   {formatExpiry(item.expiry_date)}
                 </Text>
@@ -425,10 +414,7 @@ function ItemCard({ item, onRestock, onAddStock, onPress, t, colors, styles }) {
             onPress={() => onAddStock(item)}
             activeOpacity={0.8}
           >
-            <AppIcon
-              name="addCircleOutline"
-              size={15}
-            />
+            <AppIcon name="addCircleOutline" size={15} />
             <Text style={styles.addStockBtnText}>{t("addStock")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -436,11 +422,15 @@ function ItemCard({ item, onRestock, onAddStock, onPress, t, colors, styles }) {
             onPress={() => onRestock(item)}
             activeOpacity={0.8}
           >
-            <AppIcon
-              name="arrowUp"
-              size={15}
-            />
+            <AppIcon name="arrowUp" size={15} />
             <Text style={styles.restockBtnText}>{t("restockRequest")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => onEdit(item)}
+            activeOpacity={0.8}
+          >
+            <AppIcon name="edit" size={15} />
           </TouchableOpacity>
         </View>
       </View>
@@ -546,6 +536,10 @@ export default function InventoryScreen() {
     });
   }, []);
 
+  const handleEdit = useCallback((item) => {
+    navForward("/(app)/edit-item", { itemId: item.id });
+  }, []);
+
   const handleAddStock = useCallback((item) => {
     navForward("/(app)/add-stock", {
       itemId: item.id,
@@ -590,11 +584,7 @@ export default function InventoryScreen() {
       </View>
 
       <View style={styles.searchWrap}>
-        <AppIcon
-          name="search"
-          size={16}
-          style={{ marginRight: 8 }}
-        />
+        <AppIcon name="search" size={16} style={{ marginRight: 8 }} />
         <TextInput
           style={styles.searchInput}
           placeholder={t("searchPlaceholder")}
@@ -630,10 +620,7 @@ export default function InventoryScreen() {
         >
           {filtered.length === 0 ? (
             <View style={styles.emptyBox}>
-              <AppIcon
-                name="item"
-                size={52}
-              />
+              <AppIcon name="item" size={52} />
               <Text style={styles.emptyText}>
                 {search ? t("noSearchResults") : t("noInventory")}
               </Text>
@@ -645,6 +632,7 @@ export default function InventoryScreen() {
                 item={item}
                 onRestock={handleRestock}
                 onAddStock={handleAddStock}
+                onEdit={handleEdit}
                 onPress={() => setDetailItem(item)}
                 t={t}
                 colors={colors}
@@ -690,6 +678,7 @@ export default function InventoryScreen() {
                 onClose={() => setDetailItem(null)}
                 onAddStock={handleAddStock}
                 onRestock={handleRestock}
+                onEdit={handleEdit}
                 colors={colors}
               />
             )}
@@ -742,11 +731,18 @@ export default function InventoryScreen() {
                   });
                 }}
               >
-                <View style={[styles.choiceIconWrap, { backgroundColor: getIconBoxColor('barcodeOutline', colors.isDark) }]}>
-                  <AppIcon
-                    name="barcodeOutline"
-                    size={24}
-                  />
+                <View
+                  style={[
+                    styles.choiceIconWrap,
+                    {
+                      backgroundColor: getIconBoxColor(
+                        "barcodeOutline",
+                        colors.isDark,
+                      ),
+                    },
+                  ]}
+                >
+                  <AppIcon name="barcodeOutline" size={24} />
                 </View>
                 <View style={styles.choiceText}>
                   <Text style={styles.choiceBtnLabel}>
@@ -754,10 +750,7 @@ export default function InventoryScreen() {
                   </Text>
                   <Text style={styles.choiceBtnSub}>{t("withBarcodeSub")}</Text>
                 </View>
-                <AppIcon
-                  name="forward"
-                  size={18}
-                />
+                <AppIcon name="forward" size={18} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -768,11 +761,13 @@ export default function InventoryScreen() {
                   navForward("/(app)/add-manual");
                 }}
               >
-                <View style={[styles.choiceIconWrap, { backgroundColor: getIconBoxColor('edit', colors.isDark) }]}>
-                  <AppIcon
-                    name="edit"
-                    size={24}
-                  />
+                <View
+                  style={[
+                    styles.choiceIconWrap,
+                    { backgroundColor: getIconBoxColor("edit", colors.isDark) },
+                  ]}
+                >
+                  <AppIcon name="edit" size={24} />
                 </View>
                 <View style={styles.choiceText}>
                   <Text style={styles.choiceBtnLabel}>
@@ -782,10 +777,7 @@ export default function InventoryScreen() {
                     {t("withoutBarcodeSub")}
                   </Text>
                 </View>
-                <AppIcon
-                  name="forward"
-                  size={18}
-                />
+                <AppIcon name="forward" size={18} />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -987,6 +979,15 @@ function makeStyles(c) {
       justifyContent: "center",
     },
     restockBtnText: { fontSize: 13, color: c.text, fontWeight: "600" },
+    editBtn: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: c.border,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 7,
+    },
     emptyBox: { alignItems: "center", paddingTop: 80, gap: 12 },
     emptyText: { fontSize: 14, color: c.textMuted, textAlign: "center" },
     footer: {
