@@ -103,7 +103,6 @@ export default function Clinics() {
     const q = search.toLowerCase();
     const matchesSearch =
       (c.name || "").toLowerCase().includes(q) ||
-      (c.username || "").toLowerCase().includes(q) ||
       (c.email || "").toLowerCase().includes(q) ||
       (c.first_name || "").toLowerCase().includes(q) ||
       (c.last_name || "").toLowerCase().includes(q);
@@ -292,18 +291,6 @@ export default function Clinics() {
 
               {/* Credentials */}
               <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                <div
-                  style={{
-                    fontSize: 12,
-                    fontFamily: "monospace",
-                    color: "var(--accent)",
-                    background: "var(--accent-dim)",
-                    borderRadius: 8,
-                    padding: "4px 10px",
-                  }}
-                >
-                  {clinic.username}
-                </div>
                 {clinic.email ? (
                   <div
                     style={{
