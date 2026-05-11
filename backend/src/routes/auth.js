@@ -99,7 +99,6 @@ router.post('/register', async (req, res) => {
     pendingRegistrations.set(email.toLowerCase(), {
       otp, firstName: firstName.trim(), lastName: lastName.trim(),
       position, organizationName: organizationName.trim(), passwordHash,
-      plainPassword: password,
       expiresAt: Date.now() + 10 * 60 * 1000,
     });
 
@@ -130,9 +129,9 @@ router.post('/register/verify', async (req, res) => {
 
     const username = email.split('@')[0] + '_' + Math.random().toString(36).slice(2, 6);
     const [result] = await db.execute(
-      `INSERT INTO users (organization_name, username, email, password_hash, plain_password, first_name, last_name, position)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [pending.organizationName, username, email.toLowerCase(), pending.passwordHash, pending.plainPassword, pending.firstName, pending.lastName, pending.position]
+      `INSERT INTO users (organization_name, username, email, password_hash, first_name, last_name, position)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [pending.organizationName, username, email.toLowerCase(), pending.passwordHash, pending.firstName, pending.lastName, pending.position]
     );
     pendingRegistrations.delete(email.toLowerCase());
 
@@ -177,7 +176,7 @@ router.post('/reset-password', async (req, res) => {
 
   try {
     const hash = await bcrypt.hash(newPassword, 10);
-    await db.execute('UPDATE users SET password_hash = ?, plain_password = ? WHERE email = ?', [hash, newPassword, email.toLowerCase()]);
+    await db.execute('UPDATE users SET password_hash = ? WHERE email = ?', [hash, email.toLowerCase()]);
     pendingResets.delete(email.toLowerCase());
     res.json({ message: 'Password updated' });
   } catch (err) {
@@ -241,7 +240,7 @@ router.put('/profile/password', authMiddleware, async (req, res) => {
     if (!valid) return res.status(401).json({ error: 'Current password incorrect' });
 
     const hash = await bcrypt.hash(newPassword, 10);
-    await db.execute('UPDATE users SET password_hash = ?, plain_password = ? WHERE id = ?', [hash, newPassword, req.user.id]);
+    await db.execute('UPDATE users SET password_hash = ? WHERE id = ?', [hash, req.user.id]);
     res.json({ message: 'Password updated' });
   } catch (err) {
     console.error(err);
@@ -285,8 +284,8 @@ router.post('/google/complete', async (req, res) => {
 
     const username = email.split('@')[0];
     await db.execute(
-      'INSERT INTO users (organization_name, username, email, google_id, password_hash, plain_password, first_name, last_name, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [organizationName, username, email.toLowerCase(), googleId ?? null, '', '', firstName, lastName, position]
+      'INSERT INTO users (organization_name, username, email, google_id, password_hash, first_name, last_name, position) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [organizationName, username, email.toLowerCase(), googleId ?? null, '', firstName, lastName, position]
     );
     const [newRows] = await db.execute('SELECT * FROM users WHERE email = ?', [email.toLowerCase()]);
     res.json({ token: signToken(newRows[0]), user: buildUser(newRows[0]) });

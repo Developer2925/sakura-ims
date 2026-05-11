@@ -7,56 +7,11 @@ import {
   Building2,
   ChevronRight,
   Layers,
-  Eye,
-  EyeOff,
   TrendingUp,
   Package,
   RefreshCw,
 } from "lucide-react";
 
-
-// ── Password Cell ─────────────────────────────────────────────────────────────
-function PasswordCell({ value }) {
-  const { t } = useLang();
-  const [visible, setVisible] = useState(false);
-  if (!value)
-    return (
-      <span style={{ color: "var(--text-secondary)", fontSize: 12 }}>
-        {t("notSet")}
-      </span>
-    );
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      <span
-        style={{
-          fontFamily: "monospace",
-          fontSize: 13,
-          color: visible ? "var(--text)" : "var(--text-secondary)",
-          letterSpacing: visible ? "normal" : "0.1em",
-          userSelect: visible ? "text" : "none",
-          width: 60,
-        }}
-      >
-        {visible ? value : "••••••••"}
-      </span>
-      <button
-        onClick={() => setVisible((v) => !v)}
-        style={{
-          background: "none",
-          border: "none",
-          padding: "3px",
-          cursor: "pointer",
-          color: "var(--text-secondary)",
-          borderRadius: 6,
-          display: "flex",
-        }}
-        title={visible ? "Hide" : "Reveal"}
-      >
-        {visible ? <EyeOff size={14} /> : <Eye size={14} />}
-      </button>
-    </div>
-  );
-}
 
 // ── Main Clinics Page ─────────────────────────────────────────────────────────
 export default function Clinics() {
@@ -316,19 +271,6 @@ export default function Clinics() {
                     {t("notSet")}
                   </div>
                 )}
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  style={{
-                    fontSize: 12,
-                    background: "var(--surface-2)",
-                    borderRadius: 8,
-                    padding: "3px 8px 3px 10px",
-                    display: "flex",
-                    alignItems: "center",
-                  }}
-                >
-                  <PasswordCell value={clinic.plain_password} />
-                </div>
               </div>
 
               {/* Stats row */}

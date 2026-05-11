@@ -13,7 +13,7 @@ function requireAdmin(req, res, next) {
 router.get("/clinics", auth, requireAdmin, async (req, res) => {
   try {
     const [clinics] = await db.execute(
-      `SELECT c.id, c.organization_name AS name, c.username, c.email, c.plain_password,
+      `SELECT c.id, c.organization_name AS name, c.username, c.email,
               c.position, c.first_name, c.last_name,
               COUNT(DISTINCT i.id) AS item_count,
               COALESCE(SUM(
@@ -67,8 +67,6 @@ router.put("/clinics/:id", auth, requireAdmin, async (req, res) => {
       const hash = await bcrypt.hash(password, 10);
       fields.push("password_hash = ?");
       values.push(hash);
-      fields.push("plain_password = ?");
-      values.push(password);
     }
     values.push(id);
     await db.execute(
@@ -76,7 +74,7 @@ router.put("/clinics/:id", auth, requireAdmin, async (req, res) => {
       values,
     );
     const [[clinic]] = await db.execute(
-      "SELECT id, organization_name AS name, username, email, plain_password, position, first_name, last_name FROM users WHERE id = ?",
+      "SELECT id, organization_name AS name, username, email, position, first_name, last_name FROM users WHERE id = ?",
       [id],
     );
     res.json({ clinic });
