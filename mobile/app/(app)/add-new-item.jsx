@@ -10,18 +10,29 @@ import { useLang } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { AppIcon } from "@/components/AppIcons";
 import { useLocalSearchParams } from "expo-router";
-import { navBack } from '@/lib/animationStore';
+import { navBack } from "@/lib/animationStore";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
 import {
-  ScrollView, StyleSheet, Text, TouchableOpacity, View, Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const CATEGORY_VALUES = ["医薬品", "機器", "消耗品", "手術用品", "その他"];
-const CATEGORY_KEYS   = ["cat_medicine", "cat_equipment", "cat_consumables", "cat_surgical", "cat_other"];
+const CATEGORY_KEYS = [
+  "cat_medicine",
+  "cat_equipment",
+  "cat_consumables",
+  "cat_surgical",
+  "cat_other",
+];
 const CONDITION_VALUES = ["新品", "良好", "普通", "期限切れ"];
-const CONDITION_KEYS   = ["cond_new", "cond_good", "cond_fair", "cond_expired"];
+const CONDITION_KEYS = ["cond_new", "cond_good", "cond_fair", "cond_expired"];
 
 export default function AddNewItemScreen() {
   const { barcode } = useLocalSearchParams();
@@ -34,8 +45,14 @@ export default function AddNewItemScreen() {
   const [imageUri, setImageUri] = useState(null);
   const [imageBase64, setImageBase64] = useState(null);
   const [form, setForm] = useState({
-    name: "", manufacturer: "", category: "", customCategory: "",
-    condition: "新品", price: "", expiryDate: "", quantity: 1,
+    name: "",
+    manufacturer: "",
+    category: "",
+    customCategory: "",
+    condition: "新品",
+    price: "",
+    expiryDate: "",
+    quantity: 1,
   });
   const [errors, setErrors] = useState({});
 
@@ -43,7 +60,7 @@ export default function AddNewItemScreen() {
     const compressed = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 600 } }],
-      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true }
+      { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG, base64: true },
     );
     return compressed;
   }
@@ -86,17 +103,19 @@ export default function AddNewItemScreen() {
 
   function validate() {
     const e = {};
-    if (!form.name.trim())   e.name = t('itemNameRequired');
-    if (!form.category)      e.category = t('selectCategoryError');
-    if (form.category === "その他" && !form.customCategory.trim()) e.customCategory = t('customCategoryRequired');
-    if (!form.price || isNaN(parseFloat(form.price))) e.price = t('validPrice');
+    if (!form.name.trim()) e.name = t("itemNameRequired");
+    if (!form.category) e.category = t("selectCategoryError");
+    if (form.category === "その他" && !form.customCategory.trim())
+      e.customCategory = t("customCategoryRequired");
+    if (!form.price || isNaN(parseFloat(form.price))) e.price = t("validPrice");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
 
   async function doSave() {
     setSaving(true);
-    const finalCategory = form.category === "その他" ? form.customCategory.trim() : form.category;
+    const finalCategory =
+      form.category === "その他" ? form.customCategory.trim() : form.category;
     try {
       await api.addItem({
         barcode: barcode || undefined,
@@ -110,13 +129,18 @@ export default function AddNewItemScreen() {
         imageData: imageBase64 || undefined,
       });
       showAlert(
-        t('savedTitle'),
-        `${form.name}${t('addedToInventory')}`,
-        [{ text: t('done'), onPress: () => navBack('/(app)/dashboard') }],
-        'success',
+        t("savedTitle"),
+        `${form.name}${t("addedToInventory")}`,
+        [{ text: t("done"), onPress: () => navBack("/(app)/dashboard") }],
+        "success",
       );
     } catch (err) {
-      showAlert(t('error'), err?.message ?? t('failedToSave'), undefined, 'error');
+      showAlert(
+        t("error"),
+        err?.message ?? t("failedToSave"),
+        undefined,
+        "error",
+      );
     } finally {
       setSaving(false);
     }
@@ -125,23 +149,27 @@ export default function AddNewItemScreen() {
   function handleSave() {
     if (!validate() || !user) return;
     showAlert(
-      t('confirmAddTitle'),
-      t('confirmAddMsg'),
+      t("confirmAddTitle"),
+      t("confirmAddMsg"),
       [
-        { text: t('cancel'), style: 'cancel' },
-        { text: t('confirm'), onPress: doSave },
+        { text: t("cancel"), style: "cancel" },
+        { text: t("confirm"), onPress: doSave },
       ],
-      'confirm',
+      "confirm",
     );
   }
 
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navBack('/(app)/dashboard')} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navBack("/(app)/dashboard")}
+          activeOpacity={0.8}
+        >
           <AppIcon name="back" size={20} />
         </TouchableOpacity>
-        <Text style={styles.title}>{t('newItemTitle')}</Text>
+        <Text style={styles.title}>{t("newItemTitle")}</Text>
       </View>
 
       <ScrollView
@@ -152,19 +180,21 @@ export default function AddNewItemScreen() {
       >
         <View style={styles.barcodeBadge}>
           <AppIcon name="barcode" size={16} />
-          <Text style={styles.barcodeText} numberOfLines={1}>{barcode}</Text>
-          <Text style={styles.barcodeAuto}>{t('autoFilled')}</Text>
+          <Text style={styles.barcodeText} numberOfLines={1}>
+            {barcode}
+          </Text>
+          <Text style={styles.barcodeAuto}>{t("autoFilled")}</Text>
         </View>
 
         <InputField
-          label={t('itemNameLabel')}
+          label={t("itemNameLabel")}
           value={form.name}
           onChangeText={(v) => setField("name", v)}
           placeholder="e.g. Paracetamol 500mg"
           error={errors.name}
         />
         <InputField
-          label={t('manufacturerOptLabel')}
+          label={t("manufacturerOptLabel")}
           value={form.manufacturer}
           onChangeText={(v) => setField("manufacturer", v)}
           placeholder="e.g. ABC Pharma"
@@ -172,27 +202,37 @@ export default function AddNewItemScreen() {
         />
 
         <View style={styles.chipGroup}>
-          <Text style={styles.chipGroupLabel}>{t('categoryChipLabel')}</Text>
+          <Text style={styles.chipGroupLabel}>{t("categoryChipLabel")}</Text>
           <View style={styles.chipRow}>
             {CATEGORY_VALUES.map((val, idx) => (
               <TouchableOpacity
                 key={val}
-                style={[styles.chip, form.category === val && styles.chipActive]}
+                style={[
+                  styles.chip,
+                  form.category === val && styles.chipActive,
+                ]}
                 onPress={() => setField("category", val)}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.chipText, form.category === val && styles.chipTextActive]}>
+                <Text
+                  style={[
+                    styles.chipText,
+                    form.category === val && styles.chipTextActive,
+                  ]}
+                >
                   {t(CATEGORY_KEYS[idx])}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          {errors.category ? <Text style={styles.errText}>{errors.category}</Text> : null}
+          {errors.category ? (
+            <Text style={styles.errText}>{errors.category}</Text>
+          ) : null}
         </View>
 
         {form.category === "その他" && (
           <InputField
-            label={t('customCategoryLabel')}
+            label={t("customCategoryLabel")}
             value={form.customCategory}
             onChangeText={(v) => setField("customCategory", v)}
             placeholder="Enter custom category"
@@ -201,16 +241,24 @@ export default function AddNewItemScreen() {
         )}
 
         <View style={styles.chipGroup}>
-          <Text style={styles.chipGroupLabel}>{t('conditionChipLabel')}</Text>
+          <Text style={styles.chipGroupLabel}>{t("conditionChipLabel")}</Text>
           <View style={styles.chipRow}>
             {CONDITION_VALUES.map((val, idx) => (
               <TouchableOpacity
                 key={val}
-                style={[styles.chip, form.condition === val && styles.chipCondActive]}
+                style={[
+                  styles.chip,
+                  form.condition === val && styles.chipCondActive,
+                ]}
                 onPress={() => setField("condition", val)}
                 activeOpacity={0.75}
               >
-                <Text style={[styles.chipText, form.condition === val && styles.chipTextCondActive]}>
+                <Text
+                  style={[
+                    styles.chipText,
+                    form.condition === val && styles.chipTextCondActive,
+                  ]}
+                >
                   {t(CONDITION_KEYS[idx])}
                 </Text>
               </TouchableOpacity>
@@ -219,7 +267,7 @@ export default function AddNewItemScreen() {
         </View>
 
         <InputField
-          label={t('priceChipLabel')}
+          label={t("priceChipLabel")}
           value={form.price}
           onChangeText={(v) => setField("price", v)}
           placeholder="0.00"
@@ -227,15 +275,19 @@ export default function AddNewItemScreen() {
           error={errors.price}
         />
         <DatePickerField
-          label={t('expiryOptionalLabel')}
+          label={t("expiryOptionalLabel")}
           value={form.expiryDate}
           onChange={(v) => setField("expiryDate", v)}
           error={errors.expiryDate}
         />
 
         <View style={styles.qtyGroup}>
-          <Text style={styles.chipGroupLabel}>{t('qtyLabel')}</Text>
-          <QuantityControl value={form.quantity} onChange={(v) => setField("quantity", v)} min={1} />
+          <Text style={styles.chipGroupLabel}>{t("qtyLabel")}</Text>
+          <QuantityControl
+            value={form.quantity}
+            onChange={(v) => setField("quantity", v)}
+            min={1}
+          />
         </View>
 
         {/* Image picker */}
@@ -244,17 +296,32 @@ export default function AddNewItemScreen() {
           {imageUri ? (
             <View style={{ alignItems: "center", gap: 10 }}>
               <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-              <TouchableOpacity style={styles.imageRemoveBtn} onPress={() => { setImageUri(null); setImageBase64(null); }} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.imageRemoveBtn}
+                onPress={() => {
+                  setImageUri(null);
+                  setImageBase64(null);
+                }}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.imageRemoveBtnText}>Remove</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.imagePickerRow}>
-              <TouchableOpacity style={styles.imagePickerBtn} onPress={pickImage} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.imagePickerBtn}
+                onPress={pickImage}
+                activeOpacity={0.8}
+              >
                 <AppIcon name="images" size={18} />
                 <Text style={styles.imagePickerBtnText}>Library</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.imagePickerBtn} onPress={takePhoto} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.imagePickerBtn}
+                onPress={takePhoto}
+                activeOpacity={0.8}
+              >
                 <AppIcon name="camera" size={18} />
                 <Text style={styles.imagePickerBtnText}>Camera</Text>
               </TouchableOpacity>
@@ -262,22 +329,27 @@ export default function AddNewItemScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.ctaBtn} onPress={handleSave} activeOpacity={0.85} disabled={saving}>
-          <Text style={styles.ctaBtnText}>{t('saveItem')}</Text>
+        <TouchableOpacity
+          style={styles.ctaBtn}
+          onPress={handleSave}
+          activeOpacity={0.85}
+          disabled={saving}
+        >
+          <Text style={styles.ctaBtnText}>{t("saveItem")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.manualBtn}
-          onPress={() => navBack('/(app)/dashboard')}
+          onPress={() => navBack("/(app)/dashboard")}
           activeOpacity={0.8}
         >
-          <Text style={styles.manualBtnText}>{t('manualAddBtn')}</Text>
+          <Text style={styles.manualBtnText}>{t("manualAddBtn")}</Text>
         </TouchableOpacity>
 
         <View style={{ height: 32 }} />
       </ScrollView>
 
-      {saving && <LoadingOverlay message={t('savingItem')} />}
+      {saving && <LoadingOverlay message={t("savingItem")} />}
       {AlertComponent}
     </SafeAreaView>
   );
@@ -287,29 +359,61 @@ function makeStyles(c) {
   return StyleSheet.create({
     screen: { flex: 1, backgroundColor: c.bg },
     header: {
-      flexDirection: "row", alignItems: "center",
-      paddingHorizontal: 20, paddingTop: 12, paddingBottom: 14, gap: 14,
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingTop: 12,
+      paddingBottom: 14,
+      gap: 14,
       backgroundColor: c.bg,
     },
     backBtn: {
-      width: 40, height: 40, borderRadius: 14,
-      backgroundColor: c.surface, alignItems: "center", justifyContent: "center",
+      width: 40,
+      height: 40,
+      borderRadius: 14,
+      backgroundColor: c.surface,
+      alignItems: "center",
+      justifyContent: "center",
     },
-    title: { fontSize: 22, fontWeight: "800", color: c.text, letterSpacing: -0.3 },
+    title: {
+      fontSize: 22,
+      fontWeight: "800",
+      color: c.text,
+      letterSpacing: -0.3,
+    },
     content: { paddingHorizontal: 20, paddingTop: 4 },
     barcodeBadge: {
-      flexDirection: "row", alignItems: "center", gap: 8,
-      backgroundColor: c.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)", borderRadius: 14,
-      paddingHorizontal: 14, paddingVertical: 10, marginBottom: 20,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      backgroundColor: c.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
+      borderRadius: 14,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      marginBottom: 20,
     },
-    barcodeText: { fontFamily: "monospace", fontSize: 13, color: c.textMuted, flex: 1 },
+    barcodeText: {
+      fontFamily: "monospace",
+      fontSize: 13,
+      color: c.textMuted,
+      flex: 1,
+    },
     barcodeAuto: { fontSize: 11, color: c.textMuted },
     chipGroup: { marginBottom: 20 },
-    chipGroupLabel: { fontSize: 13, fontWeight: "700", color: c.textMuted, marginBottom: 10 },
+    chipGroupLabel: {
+      fontSize: 13,
+      fontWeight: "700",
+      color: c.textMuted,
+      marginBottom: 10,
+    },
     chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
     chip: {
-      paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20,
-      backgroundColor: "rgba(129,128,126,0.1)", borderWidth: 1.5, borderColor: "transparent",
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: "rgba(129,128,126,0.1)",
+      borderWidth: 1.5,
+      borderColor: "transparent",
     },
     chipActive: { backgroundColor: c.border2, borderColor: c.text },
     chipCondActive: { backgroundColor: c.text, borderColor: c.text },
@@ -319,25 +423,46 @@ function makeStyles(c) {
     errText: { fontSize: 12, color: c.textMuted, marginTop: 6 },
     qtyGroup: { marginBottom: 20 },
     ctaBtn: {
-      backgroundColor: c.text, borderRadius: 20,
-      paddingVertical: 18, alignItems: "center", marginBottom: 12,
+      backgroundColor: c.text,
+      borderRadius: 20,
+      paddingVertical: 18,
+      alignItems: "center",
+      marginBottom: 12,
     },
     ctaBtnText: { color: c.bg, fontSize: 16, fontWeight: "700" },
     manualBtn: {
-      borderRadius: 20, paddingVertical: 16, alignItems: "center",
-      marginTop: 8, backgroundColor: "rgba(129,128,126,0.1)",
+      borderRadius: 20,
+      paddingVertical: 16,
+      alignItems: "center",
+      marginTop: 8,
+      backgroundColor: "rgba(129,128,126,0.1)",
     },
     manualBtnText: { color: c.textMuted, fontSize: 14, fontWeight: "600" },
     imagePickerRow: { flexDirection: "row", gap: 10 },
     imagePickerBtn: {
-      flex: 1, paddingVertical: 14, borderRadius: 14,
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 14,
       backgroundColor: c.isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-      alignItems: "center", justifyContent: "center", gap: 6,
-      borderWidth: 1, borderColor: "rgba(129,128,126,0.2)",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      borderWidth: 1,
+      borderColor: "rgba(129,128,126,0.2)",
     },
     imagePickerBtnText: { fontSize: 14, fontWeight: "600", color: c.textMuted },
-    imagePreview: { width: 120, height: 120, borderRadius: 16, backgroundColor: c.surface },
-    imageRemoveBtn: { paddingVertical: 6, paddingHorizontal: 16, borderRadius: 20, backgroundColor: "rgba(239,68,68,0.1)" },
+    imagePreview: {
+      width: 120,
+      height: 120,
+      borderRadius: 16,
+      backgroundColor: c.surface,
+    },
+    imageRemoveBtn: {
+      paddingVertical: 6,
+      paddingHorizontal: 16,
+      borderRadius: 20,
+      backgroundColor: "rgba(239,68,68,0.1)",
+    },
     imageRemoveBtnText: { fontSize: 13, fontWeight: "600", color: "#EF4444" },
   });
 }
