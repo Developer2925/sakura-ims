@@ -8,260 +8,12 @@ import {
   Building2,
   Mail,
   Package,
-  ShieldCheck,
   TrendingUp,
-  Pencil,
-  Send,
-  Eye,
-  EyeOff,
-  CheckCircle,
   Layers,
   AlertTriangle,
 } from "lucide-react";
 
 const LOW_STOCK = 100;
-
-// ── Edit Modal ────────────────────────────────────────────────────────────────
-function EditModal({ clinic, onClose, onSaved }) {
-  const { t } = useLang();
-  const [form, setForm] = useState({
-    name: clinic.name,
-    username: clinic.username,
-    email: clinic.email || "",
-    password: "",
-  });
-  const [showPw, setShowPw] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  function set(field, val) {
-    setForm((f) => ({ ...f, [field]: val }));
-    setError("");
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    try {
-      const payload = {
-        name: form.name.trim() || undefined,
-        username: form.username.trim() || undefined,
-        email: form.email.trim() || "",
-        password: form.password || undefined,
-      };
-      const { clinic: updated } = await api.updateClinic(clinic.id, payload);
-      onSaved(updated);
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div
-      className="modal-overlay"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="modal">
-        <h2
-          className="modal-title"
-          style={{ display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <Pencil size={18} /> {t("editClinicCredentials")}
-        </h2>
-        {[
-          ["name", t("clinicName")],
-          ["username", t("username")],
-          ["email", t("email")],
-        ].map(([field, label]) => (
-          <div className="form-group" key={field}>
-            <label className="form-label">{label}</label>
-            <input
-              value={form[field]}
-              onChange={(e) => set(field, e.target.value)}
-              type={field === "email" ? "email" : "text"}
-            />
-          </div>
-        ))}
-        <div className="form-group">
-          <label className="form-label">
-            {t("newPassword")}{" "}
-            <span style={{ color: "var(--text-secondary)", fontWeight: 400 }}>
-              {t("leaveBlank")}
-            </span>
-          </label>
-          <div className="input-reveal">
-            <input
-              type={showPw ? "text" : "password"}
-              value={form.password}
-              onChange={(e) => set("password", e.target.value)}
-              placeholder={t("enterNewPassword")}
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              className="reveal-btn"
-              onClick={() => setShowPw((v) => !v)}
-            >
-              {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-        </div>
-        {error && (
-          <div
-            style={{
-              color: "var(--red)",
-              fontSize: 13,
-              marginBottom: 12,
-              padding: "8px 12px",
-              background: "var(--red-light)",
-              borderRadius: 8,
-            }}
-          >
-            {error}
-          </div>
-        )}
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose} disabled={saving}>
-            {t("cancel")}
-          </button>
-          <button
-            className="btn-primary"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? t("saving") : t("saveChanges")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Send Modal ─────────────────────────────────────────────────────────────────
-function SendModal({ clinic, onClose }) {
-  const { t } = useLang();
-  const [password, setPassword] = useState(clinic.plain_password || "");
-  const [showPw, setShowPw] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
-
-  async function handleSend() {
-    if (!password.trim()) {
-      setError("Password required.");
-      return;
-    }
-    if (!clinic.email) {
-      setError(t("noEmailSet"));
-      return;
-    }
-    setSending(true);
-    try {
-      await api.sendCredentials(clinic.id, password);
-      setSent(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSending(false);
-    }
-  }
-
-  return (
-    <div
-      className="modal-overlay"
-      onClick={(e) => e.target === e.currentTarget && !sent && onClose()}
-    >
-      <div className="modal">
-        {sent ? (
-          <div style={{ textAlign: "center", padding: "12px 0 24px" }}>
-            <CheckCircle
-              size={48}
-              color="var(--green)"
-              style={{ margin: "0 auto 12px", display: "block" }}
-            />
-            <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 8 }}>
-              {t("credentialsSent")}
-            </h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: 14 }}>
-              {t("loginDetailsEmailed")}
-              <br />
-              <strong style={{ color: "var(--text)" }}>{clinic.email}</strong>
-            </p>
-            <div
-              className="modal-footer"
-              style={{ justifyContent: "center", marginTop: 20 }}
-            >
-              <button className="btn-primary" onClick={onClose}>
-                {t("done")}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <h2
-              className="modal-title"
-              style={{ display: "flex", alignItems: "center", gap: 8 }}
-            >
-              <Send size={18} /> {t("sendLoginCredentials")}
-            </h2>
-            <div className="form-group">
-              <div className="input-reveal">
-                <input
-                  type={showPw ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError("");
-                  }}
-                  placeholder={t("typePassword")}
-                  autoFocus
-                />
-                <button
-                  type="button"
-                  className="reveal-btn"
-                  onClick={() => setShowPw((v) => !v)}
-                >
-                  {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
-              </div>
-            </div>
-            {error && (
-              <div
-                style={{ color: "var(--red)", fontSize: 13, marginBottom: 12 }}
-              >
-                {error}
-              </div>
-            )}
-            <div className="modal-footer">
-              <button
-                className="btn-secondary"
-                onClick={onClose}
-                disabled={sending}
-              >
-                {t("cancel")}
-              </button>
-              <button
-                className="btn-info"
-                onClick={handleSend}
-                disabled={sending || !clinic.email}
-              >
-                {sending ? (
-                  t("sending")
-                ) : (
-                  <>
-                    <Send size={13} /> {t("sendEmail")}
-                  </>
-                )}
-              </button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ── Main ───────────────────────────────────────────────────────────────────────
 export default function ClinicDetail() {
@@ -271,11 +23,6 @@ export default function ClinicDetail() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [editOpen, setEditOpen] = useState(false);
-  const [sendOpen, setSendOpen] = useState(false);
-  const [editingId, setEditingId] = useState(null);
-  const [editQty, setEditQty] = useState("");
-  const [saving, setSaving] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -312,37 +59,6 @@ export default function ClinicDetail() {
     }, containerRef);
     return () => ctx.revert();
   }, [data]);
-
-  async function handleSaveQty(item) {
-    const qty = parseInt(editQty);
-    if (isNaN(qty) || qty < 0) return;
-    setSaving(true);
-    try {
-      await api.updateInventoryItem(id, item.id, qty);
-      setData((prev) => ({
-        ...prev,
-        items: prev.items.map((i) =>
-          i.id === item.id
-            ? {
-                ...i,
-                quantity: qty,
-                total_price:
-                  i.batches && i.batches.length > 0
-                    ? i.batches
-                        .reduce((s, b) => s + Number(b.price) * b.quantity, 0)
-                        .toFixed(2)
-                    : (i.price * qty).toFixed(2),
-              }
-            : i,
-        ),
-      }));
-      setEditingId(null);
-    } catch (err) {
-      alert(t("updateFailed") + ": " + err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
 
   if (loading)
     return (
@@ -486,22 +202,6 @@ export default function ClinicDetail() {
                 marginTop: 14,
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                  fontSize: 13,
-                  color: "var(--text-secondary)",
-                }}
-              >
-                <ShieldCheck size={13} />
-                <span
-                  style={{ fontFamily: "monospace", color: "var(--accent)" }}
-                >
-                  {clinic.username}
-                </span>
-              </div>
               {clinic.email && (
                 <div
                   style={{
@@ -523,22 +223,6 @@ export default function ClinicDetail() {
               )}
             </div>
           </div>
-        </div>
-        <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-          <button
-            className="btn-ghost"
-            style={{ padding: "9px 14px" }}
-            onClick={() => setEditOpen(true)}
-          >
-            <Pencil size={14} /> {t("edit")}
-          </button>
-          <button
-            className="btn-info"
-            style={{ padding: "9px 14px" }}
-            onClick={() => setSendOpen(true)}
-          >
-            <Send size={14} /> {t("sendEmail")}
-          </button>
         </div>
       </div>
 
@@ -626,9 +310,7 @@ export default function ClinicDetail() {
               <th style={{ textAlign: "center" }}>{t("qty")}</th>
               <th>{t("totalValue")}</th>
               <th>{t("expiry")}</th>
-              <th>
-                {t("actions")} / {t("stockedDate")}
-              </th>
+              <th>{t("stockedDate")}</th>
             </tr>
           </thead>
           <tbody>
@@ -666,42 +348,31 @@ export default function ClinicDetail() {
                       )}
                     </td>
                     <td style={{ textAlign: "center" }}>
-                      {editingId === item.id ? (
-                        <input
-                          type="number"
-                          value={editQty}
-                          onChange={(e) => setEditQty(e.target.value)}
-                          min="0"
-                          style={{ width: 80, padding: "4px 8px" }}
-                          autoFocus
-                        />
-                      ) : (
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color:
-                              item.quantity <= LOW_STOCK
-                                ? "var(--amber)"
-                                : "var(--text)",
-                          }}
-                        >
-                          {item.quantity}
-                          {item.quantity <= LOW_STOCK && (
-                            <span
-                              style={{
-                                marginLeft: 4,
-                                fontSize: 10,
-                                background: "var(--amber-light)",
-                                color: "var(--amber)",
-                                padding: "1px 5px",
-                                borderRadius: 4,
-                              }}
-                            >
-                              LOW
-                            </span>
-                          )}
-                        </span>
-                      )}
+                      <span
+                        style={{
+                          fontWeight: 700,
+                          color:
+                            item.quantity <= LOW_STOCK
+                              ? "var(--amber)"
+                              : "var(--text)",
+                        }}
+                      >
+                        {item.quantity}
+                        {item.quantity <= LOW_STOCK && (
+                          <span
+                            style={{
+                              marginLeft: 4,
+                              fontSize: 10,
+                              background: "var(--amber-light)",
+                              color: "var(--amber)",
+                              padding: "1px 5px",
+                              borderRadius: 4,
+                            }}
+                          >
+                            LOW
+                          </span>
+                        )}
+                      </span>
                     </td>
                     <td style={{ fontWeight: 700, color: "var(--accent)" }}>
                       ¥{Number(item.total_price).toFixed(2)}
@@ -715,37 +386,17 @@ export default function ClinicDetail() {
                           ? item.expiry_date.slice(0, 10)
                           : "—"}
                     </td>
-                    <td>
-                      {editingId === item.id ? (
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <button
-                            className="btn-success"
-                            style={{ padding: "5px 12px", fontSize: 12 }}
-                            onClick={() => handleSaveQty(item)}
-                            disabled={saving}
-                          >
-                            {t("save")}
-                          </button>
-                          <button
-                            className="btn-secondary"
-                            style={{ padding: "5px 12px", fontSize: 12 }}
-                            onClick={() => setEditingId(null)}
-                          >
-                            {t("cancel")}
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          className="btn-secondary"
-                          style={{ padding: "5px 11px", fontSize: 12 }}
-                          onClick={() => {
-                            setEditingId(item.id);
-                            setEditQty(String(item.quantity));
-                          }}
-                        >
-                          {t("edit")}
-                        </button>
-                      )}
+                    <td
+                      style={{
+                        fontSize: 11,
+                        color: "var(--text-secondary)",
+                      }}
+                    >
+                      {!hasBatches
+                        ? item.created_at
+                          ? new Date(item.created_at).toLocaleDateString()
+                          : "—"
+                        : "—"}
                     </td>
                   </tr>
                   {hasBatches &&
@@ -818,22 +469,6 @@ export default function ClinicDetail() {
           <div className="empty-state">{t("noItemsFound")}</div>
         )}
       </div>
-
-      {editOpen && (
-        <EditModal
-          clinic={clinic}
-          onClose={() => setEditOpen(false)}
-          onSaved={(updated) =>
-            setData((prev) => ({
-              ...prev,
-              clinic: { ...prev.clinic, ...updated },
-            }))
-          }
-        />
-      )}
-      {sendOpen && (
-        <SendModal clinic={clinic} onClose={() => setSendOpen(false)} />
-      )}
     </div>
   );
 }

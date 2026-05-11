@@ -42,7 +42,6 @@ export function BarcodeScanner({ onScan, active = true, onReady }) {
 
   function handleBarcode({ data }) {
     if (scanned || !active) return;
-    if (data.length !== 13 && data.length !== 8) return;
     setScanned(true);
     Vibration.vibrate(120);
     setTimeout(() => onScan(data), 200);
@@ -51,7 +50,7 @@ export function BarcodeScanner({ onScan, active = true, onReady }) {
   if (!permission) {
     return (
       <View style={styles.center}>
-        <Text style={styles.permText}>{t('cameraChecking')}</Text>
+        <Text style={styles.permText}>{t("cameraChecking")}</Text>
       </View>
     );
   }
@@ -62,14 +61,14 @@ export function BarcodeScanner({ onScan, active = true, onReady }) {
         <View style={styles.permIconWrap}>
           <AppIcon name="camera" size={36} />
         </View>
-        <Text style={styles.permTitle}>{t('cameraPermRequired')}</Text>
-        <Text style={styles.permSub}>{t('cameraPermDesc')}</Text>
+        <Text style={styles.permTitle}>{t("cameraPermRequired")}</Text>
+        <Text style={styles.permSub}>{t("cameraPermDesc")}</Text>
         <TouchableOpacity
           style={styles.permBtn}
           onPress={requestPermission}
           activeOpacity={0.8}
         >
-          <Text style={styles.permBtnText}>{t('cameraPermAllow')}</Text>
+          <Text style={styles.permBtnText}>{t("cameraPermAllow")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -81,7 +80,6 @@ export function BarcodeScanner({ onScan, active = true, onReady }) {
   });
 
   return (
-    // 'qr', 'ean8', 'code128', 'code39', 'upc_a', 'upc_e', 'itf14', 'datamatrix'
     <View style={styles.container}>
       <CameraView
         style={StyleSheet.absoluteFill}
@@ -89,7 +87,10 @@ export function BarcodeScanner({ onScan, active = true, onReady }) {
         onCameraReady={onReady}
         onBarcodeScanned={scanned ? undefined : handleBarcode}
         barcodeScannerSettings={{
-          barcodeTypes: ["ean13", "ean8"],
+          barcodeTypes: [
+            "ean13", "ean8", "qr", "code128", "code39", "code93",
+            "upc_a", "upc_e", "itf14", "datamatrix", "pdf417", "aztec", "codabar",
+          ],
         }}
       />
 
@@ -154,7 +155,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
     letterSpacing: -0.3,
   },
-  permSub: { fontSize: 14, color: "#81807E", textAlign: "center", lineHeight: 20 },
+  permSub: {
+    fontSize: 14,
+    color: "#81807E",
+    textAlign: "center",
+    lineHeight: 20,
+  },
   permBtn: {
     backgroundColor: "#FFFFFF",
     borderRadius: 16,
