@@ -20,7 +20,7 @@ const SECTION_EMAIL_OTP = "email_otp";
 
 
 export default function ProfileScreen() {
-  const { user, requestEmailChange, verifyEmailChange, updatePassword } = useAuth();
+  const { user, requestEmailChange, verifyEmailChange, updatePassword, deleteAccount } = useAuth();
   const { showAlert, AlertComponent } = useAlert();
   const { colors } = useTheme();
   const { t } = useLang();
@@ -164,6 +164,37 @@ export default function ProfileScreen() {
           </>
         )}
 
+        {/* Delete Account */}
+        <Text style={[styles.sectionLabel, { color: "#EF4444" }]}>{t("dangerZone")}</Text>
+        <TouchableOpacity
+          style={styles.deleteBtn}
+          activeOpacity={0.8}
+          onPress={() =>
+            showAlert(
+              t("deleteAccountTitle"),
+              t("deleteAccountMsg"),
+              [
+                { text: t("cancel"), style: "cancel" },
+                {
+                  text: t("deleteAccountConfirm"),
+                  style: "destructive",
+                  onPress: async () => {
+                    try {
+                      await deleteAccount();
+                      router.replace("/(auth)/login");
+                    } catch (err) {
+                      showAlert(t("error"), err?.message ?? "Failed to delete account", undefined, "error");
+                    }
+                  },
+                },
+              ],
+              "error"
+            )
+          }
+        >
+          <Text style={styles.deleteBtnText}>{t("deleteAccount")}</Text>
+        </TouchableOpacity>
+
         <View style={{ height: 40 }} />
       </ScrollView>
       {AlertComponent}
@@ -213,5 +244,7 @@ function makeStyles(c) {
     saveBtn: { flex: 1, paddingVertical: 14, borderRadius: 14, backgroundColor: c.text, alignItems: "center" },
     saveBtnText: { fontSize: 14, fontWeight: "700", color: c.bg },
     btnDisabled: { opacity: 0.5 },
+    deleteBtn: { backgroundColor: "rgba(239,68,68,0.1)", borderRadius: 16, paddingVertical: 16, alignItems: "center", marginBottom: 12, borderWidth: 1.5, borderColor: "rgba(239,68,68,0.2)" },
+    deleteBtnText: { fontSize: 15, fontWeight: "700", color: "#EF4444" },
   });
 }

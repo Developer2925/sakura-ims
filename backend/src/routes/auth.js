@@ -296,4 +296,23 @@ router.post('/google/complete', async (req, res) => {
   }
 });
 
+// ── Delete account ────────────────────────────────────────────────────────────
+router.delete('/account', authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    await db.execute('DELETE FROM notifications WHERE user_id = ?', [userId]);
+    await db.execute('DELETE FROM restock_logs WHERE user_id = ? OR performed_by = ?', [userId, userId]);
+    await db.execute('DELETE FROM restock_requests WHERE user_id = ?', [userId]);
+    await db.execute('DELETE FROM transactions WHERE user_id = ?', [userId]);
+    await db.execute('DELETE FROM item_batches WHERE user_id = ?', [userId]);
+    await db.execute('DELETE FROM inventory WHERE user_id = ?', [userId]);
+    await db.execute('DELETE FROM items WHERE user_id = ?', [userId]);
+    await db.execute('DELETE FROM users WHERE id = ?', [userId]);
+    res.json({ message: 'Account deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 module.exports = router;

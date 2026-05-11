@@ -327,6 +327,11 @@ const T = {
     profileUpdate: "更新",
     profileClinicStaff: "クリニックスタッフ",
     profileOfficeStaff: "オフィススタッフ",
+    dangerZone: "危険ゾーン",
+    deleteAccount: "アカウントを削除",
+    deleteAccountTitle: "アカウントを削除しますか？",
+    deleteAccountMsg: "この操作は元に戻せません。すべてのデータが完全に削除されます。",
+    deleteAccountConfirm: "削除する",
 
     // Settings
     settingsTitle: "設定",
@@ -675,6 +680,11 @@ const T = {
     profileUpdate: "Update",
     profileClinicStaff: "Clinic Staff",
     profileOfficeStaff: "Office Staff",
+    dangerZone: "Danger Zone",
+    deleteAccount: "Delete Account",
+    deleteAccountTitle: "Delete Account?",
+    deleteAccountMsg: "This action cannot be undone. All your data will be permanently deleted.",
+    deleteAccountConfirm: "Delete",
 
     // Settings
     settingsTitle: "Settings",

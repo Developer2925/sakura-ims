@@ -7,271 +7,13 @@ import {
   Building2,
   ChevronRight,
   Layers,
-  Pencil,
   Eye,
   EyeOff,
   TrendingUp,
   Package,
-  Trash2,
-  AlertTriangle,
   RefreshCw,
 } from "lucide-react";
 
-
-// ── Edit Credentials Modal ────────────────────────────────────────────────────
-function EditModal({ clinic, onClose, onSaved }) {
-  const { t } = useLang();
-  const [form, setForm] = useState({
-    name: clinic.name,
-    username: clinic.username,
-    email: clinic.email || "",
-    password: "",
-  });
-  const [showPw, setShowPw] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  function set(field, val) {
-    setForm((f) => ({ ...f, [field]: val }));
-    setError("");
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    setError("");
-    try {
-      const payload = {
-        name: form.name.trim() || undefined,
-        username: form.username.trim() || undefined,
-        email: form.email.trim() || "",
-        password: form.password || undefined,
-      };
-      const { clinic: updated } = await api.updateClinic(clinic.id, payload);
-      onSaved(updated);
-      onClose();
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div
-      className="modal-overlay"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-    >
-      <div className="modal">
-        <h2
-          className="modal-title"
-          style={{ display: "flex", alignItems: "center", gap: 8 }}
-        >
-          <Pencil size={18} /> {t("editClinicCredentials")}
-        </h2>
-
-        <div className="form-group">
-          <label className="form-label">{t("clinicName")}</label>
-          <input
-            value={form.name}
-            onChange={(e) => set("name", e.target.value)}
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t("username")}</label>
-          <input
-            value={form.username}
-            onChange={(e) => set("username", e.target.value)}
-            style={{ fontFamily: "monospace" }}
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t("email")}</label>
-          <input
-            type="email"
-            value={form.email}
-            onChange={(e) => set("email", e.target.value)}
-            placeholder="clinic@example.com"
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">
-            {t("newPassword")}{" "}
-            <span style={{ color: "#9CA3AF", fontWeight: 400 }}>
-              {t("leaveBlank")}
-            </span>
-          </label>
-          <div className="input-reveal">
-            <input
-              type={showPw ? "text" : "password"}
-              value={form.password}
-              onChange={(e) => set("password", e.target.value)}
-              placeholder={t("enterNewPassword")}
-              autoComplete="new-password"
-            />
-            <button
-              type="button"
-              className="reveal-btn"
-              onClick={() => setShowPw((v) => !v)}
-            >
-              {showPw ? <EyeOff size={15} /> : <Eye size={15} />}
-            </button>
-          </div>
-        </div>
-
-        {error && (
-          <div
-            style={{
-              color: "#EF4444",
-              fontSize: 13,
-              marginBottom: 12,
-              padding: "8px 12px",
-              background: "#FEE2E2",
-              borderRadius: 8,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div className="modal-footer">
-          <button className="btn-secondary" onClick={onClose} disabled={saving}>
-            {t("cancel")}
-          </button>
-          <button
-            className="btn-primary"
-            onClick={handleSave}
-            disabled={saving}
-          >
-            {saving ? t("saving") : t("saveChanges")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Delete Clinic Data Modal ──────────────────────────────────────────────────
-function DeleteModal({ clinic, onClose, onCleared }) {
-  const { t } = useLang();
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState("");
-  const name = clinic.name || `${clinic.first_name ?? ""} ${clinic.last_name ?? ""}`.trim();
-
-  async function handleDelete() {
-    setDeleting(true);
-    setError("");
-    try {
-      await api.deleteClinicData(clinic.id);
-      onCleared(clinic.id);
-      onClose();
-    } catch (err) {
-      setError(err.message);
-      setDeleting(false);
-    }
-  }
-
-  return (
-    <div
-      className="modal-overlay"
-      onClick={(e) => e.target === e.currentTarget && !deleting && onClose()}
-    >
-      <div className="modal">
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 12,
-            padding: "8px 0 20px",
-            textAlign: "center",
-          }}
-        >
-          <div
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 16,
-              background: "var(--red-light)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <AlertTriangle size={26} color="var(--red)" />
-          </div>
-          <h2
-            style={{
-              fontSize: 18,
-              fontWeight: 800,
-              color: "var(--text)",
-              margin: 0,
-            }}
-          >
-            {t("deleteClinicConfirm")}
-          </h2>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "var(--accent)",
-              background: "var(--accent-dim)",
-              borderRadius: 8,
-              padding: "4px 12px",
-            }}
-          >
-            {name}
-          </div>
-          <p
-            style={{
-              fontSize: 13,
-              color: "var(--text-secondary)",
-              lineHeight: 1.6,
-              margin: 0,
-            }}
-          >
-            {t("deleteClinicWarning")}
-          </p>
-        </div>
-
-        {error && (
-          <div
-            style={{
-              color: "#EF4444",
-              fontSize: 13,
-              marginBottom: 12,
-              padding: "8px 12px",
-              background: "#FEE2E2",
-              borderRadius: 8,
-            }}
-          >
-            {error}
-          </div>
-        )}
-
-        <div className="modal-footer">
-          <button
-            className="btn-secondary"
-            onClick={onClose}
-            disabled={deleting}
-          >
-            {t("cancel")}
-          </button>
-          <button
-            className="btn-danger"
-            onClick={handleDelete}
-            disabled={deleting}
-          >
-            <Trash2 size={14} />
-            {deleting ? t("deleting") : t("deleteClinicBtn")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Password Cell ─────────────────────────────────────────────────────────────
 function PasswordCell({ value }) {
@@ -324,8 +66,6 @@ export default function Clinics() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [positionFilter, setPositionFilter] = useState("all");
-  const [editClinic, setEditClinic] = useState(null);
-  const [deleteClinic, setDeleteClinic] = useState(null);
   const containerRef = useRef(null);
 
   function load() {
@@ -358,22 +98,6 @@ export default function Clinics() {
     }, containerRef);
     return () => ctx.revert();
   }, [clinics]);
-
-  function handleSaved(updated) {
-    setClinics((prev) =>
-      prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c)),
-    );
-  }
-
-  function handleCleared(id) {
-    setClinics((prev) =>
-      prev.map((c) =>
-        c.id === id
-          ? { ...c, item_count: 0, total_quantity: 0, total_value: 0 }
-          : c,
-      ),
-    );
-  }
 
   const filtered = clinics.filter((c) => {
     const q = search.toLowerCase();
@@ -564,31 +288,6 @@ export default function Clinics() {
                     </div>
                   </div>
                 </div>
-                <div
-                  style={{ display: "flex", gap: 6 }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    className="btn-ghost"
-                    style={{ padding: "6px 10px", fontSize: 12 }}
-                    onClick={() => setEditClinic(clinic)}
-                    title={t("edit")}
-                  >
-                    <Pencil size={13} />
-                  </button>
-                  <button
-                    className="btn-ghost"
-                    style={{
-                      padding: "6px 10px",
-                      fontSize: 12,
-                      color: "var(--red)",
-                    }}
-                    onClick={() => setDeleteClinic(clinic)}
-                    title={t("deleteClinic")}
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
               </div>
 
               {/* Credentials */}
@@ -741,20 +440,6 @@ export default function Clinics() {
         <div className="empty-state">{t("noClinicsFound")}</div>
       )}
 
-      {editClinic && (
-        <EditModal
-          clinic={editClinic}
-          onClose={() => setEditClinic(null)}
-          onSaved={handleSaved}
-        />
-      )}
-      {deleteClinic && (
-        <DeleteModal
-          clinic={deleteClinic}
-          onClose={() => setDeleteClinic(null)}
-          onCleared={handleCleared}
-        />
-      )}
     </div>
   );
 }

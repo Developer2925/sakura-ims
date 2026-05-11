@@ -127,6 +127,20 @@ export function AuthProvider({ children }) {
     try { await GoogleSignin.signOut(); } catch (_) {}
   }
 
+  async function deleteAccount() {
+    const t = await storage.get('auth_token');
+    const res = await fetch(`${API_URL}/auth/account`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${t}` },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to delete account');
+    await Promise.all([storage.remove('auth_token'), storage.remove('auth_user')]);
+    setToken(null);
+    setUser(null);
+    try { await GoogleSignin.signOut(); } catch (_) {}
+  }
+
   useEffect(() => {
     setSessionExpiredHandler(async () => {
       await Promise.all([storage.remove('auth_token'), storage.remove('auth_user')]);
@@ -143,7 +157,7 @@ export function AuthProvider({ children }) {
       requestOTP, verifyOTP,
       requestEmailChange, verifyEmailChange,
       updatePassword,
-      logout,
+      logout, deleteAccount,
     }}>
       {children}
     </AuthContext.Provider>
